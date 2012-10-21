@@ -1,33 +1,38 @@
 //
-//  SecondViewController.m
+//  OverlayViewController.m
 //  Portail Mines
 //
-//  Created by Valérian Roche on 19/09/12.
+//  Created by Valérian Roche on 19/10/12.
 //  Copyright (c) 2012 Valérian Roche. All rights reserved.
 //
 
-#import "SecondViewController.h"
+#import "OverlayViewController.h"
+#import "Trombi.h"
 
-@interface SecondViewController ()
+@interface OverlayViewController ()
 
 @end
 
-@implementation SecondViewController
+@implementation OverlayViewController
+@synthesize rv = _rv;
 
 - (id)initWithNibName:(NSString *)nibNameOrNil bundle:(NSBundle *)nibBundleOrNil
 {
     self = [super initWithNibName:nibNameOrNil bundle:nibBundleOrNil];
     if (self) {
-        self.title = NSLocalizedString(@"Second", @"Second");
-        self.tabBarItem.image = [UIImage imageNamed:@"second"];
+        // Custom initialization
     }
     return self;
 }
-							
+
+- (void)touchesBegan:(NSSet *)touches withEvent:(UIEvent *)event {
+    [_rv finRecherche:nil];
+}
+
 - (void)viewDidLoad
 {
     [super viewDidLoad];
-	// Do any additional setup after loading the view, typically from a nib.
+    // Do any additional setup after loading the view from its nib.
 }
 
 - (void)didReceiveMemoryWarning

@@ -7,7 +7,24 @@
 //
 
 #import <UIKit/UIKit.h>
+@class IdentificationViewController;
+@class Reseau;
 
-@interface FirstViewController : UIViewController
+@interface FirstViewController : UIViewController <UITableViewDelegate,UITableViewDataSource> {
+    @private
+        BOOL premiere;
+        IdentificationViewController *control;
+        Reseau *reseauTest;
+        NSTimer *timer;
+        NSArray *messages;
+}
+
+@property (nonatomic, strong) IBOutlet UINavigationBar *barre;
+@property (nonatomic, strong) IBOutlet UITableView *liste;
+
+-(id)initWithNibName:(NSString *)nibNameOrNil bundle:(NSBundle *)nibBundleOrNil andNetwork:(Reseau *)reseau;
+-(void)supprimerVue;
+-(void)identification:(NSString *)username andPassword:(NSString *)password;
+-(IBAction)deconnexion:(id)sender;
 
 @end
