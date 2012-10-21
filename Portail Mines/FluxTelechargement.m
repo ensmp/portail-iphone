@@ -19,10 +19,10 @@
         type = photoOuDoc;
         personne = username;
         if (photoOuDoc) {
-            getRequete = [[NSMutableURLRequest alloc] initWithURL:[NSURL URLWithString:[nomDomaine stringByAppendingString:[NSString stringWithFormat:@"/static/%@.jpg",username]]] cachePolicy:NSURLRequestUseProtocolCachePolicy timeoutInterval:2];
+            getRequete = [[NSMutableURLRequest alloc] initWithURL:[NSURL URLWithString:[nomDomaine stringByAppendingString:[NSString stringWithFormat:@"/static/%@.jpg",username]]] cachePolicy:NSURLRequestUseProtocolCachePolicy timeoutInterval:10];
         }
         else {
-            getRequete = [[NSMutableURLRequest alloc] initWithURL:[NSURL URLWithString:[nomDomaine stringByAppendingString:[NSString stringWithFormat:@"/people/%@/json",username]]] cachePolicy:NSURLRequestUseProtocolCachePolicy timeoutInterval:2];
+            getRequete = [[NSMutableURLRequest alloc] initWithURL:[NSURL URLWithString:[nomDomaine stringByAppendingString:[NSString stringWithFormat:@"/people/%@/json",username]]] cachePolicy:NSURLRequestUseProtocolCachePolicy timeoutInterval:10];
         }
 
     }

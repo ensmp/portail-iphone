@@ -105,7 +105,7 @@
             trombi = [[NSArray alloc] initWithContentsOfFile:fichierTrombi];
         }
         if (!change && reseau) {
-            NSMutableURLRequest *getRequete = [[NSMutableURLRequest alloc] initWithURL:[NSURL URLWithString:[_nomDomaine stringByAppendingString:@"/people/json/"]] cachePolicy:NSURLRequestReloadIgnoringCacheData timeoutInterval:5];
+            NSMutableURLRequest *getRequete = [[NSMutableURLRequest alloc] initWithURL:[NSURL URLWithString:[_nomDomaine stringByAppendingString:@"/people/json/"]] cachePolicy:NSURLRequestReloadIgnoringCacheData timeoutInterval:10];
             recupTrombi = [[NSURLConnection alloc] initWithRequest:getRequete delegate:self];
             change = YES;
         }
@@ -136,7 +136,7 @@
             NSString *fichierImage = [[NSSearchPathForDirectoriesInDomains(NSCachesDirectory, NSUserDomainMask, YES) objectAtIndex:0] stringByAppendingString:[NSString stringWithFormat:@"/photos/%@.jpg",identifiant]];
             if (![[NSFileManager defaultManager] fileExistsAtPath:fichierImage]) {
                 if (reseau) {
-                    //[self getImage:identifiant etTelechargement:YES];
+                    [self getImage:identifiant etTelechargement:YES];
                 }
                 return nil;
             }
@@ -163,10 +163,27 @@
     }
 }
 
+-(UIImage *)getImage:(NSString *)identifiant {
+    UIImage *result = [images objectForKey:identifiant];
+    if (!result) {
+        NSString *fichierImage = [[NSSearchPathForDirectoriesInDomains(NSCachesDirectory, NSUserDomainMask, YES) objectAtIndex:0] stringByAppendingString:[NSString stringWithFormat:@"/photos/%@.jpg",identifiant]];
+        if (![[NSFileManager defaultManager] fileExistsAtPath:fichierImage]) {
+            return nil;
+        }
+        else {
+            UIImage *image = [UIImage imageWithContentsOfFile:fichierImage];
+            [images setObject:image forKey:identifiant];
+            return image;
+        }
+    }
+    else {
+        return result;
+    }
+}
+
 -(void)chercheImage:(NSString *)username pourImage:(BOOL)imageOuMessage {
-    
-    FluxTelechargement *objet = [[FluxTelechargement alloc] initWithDomaine:_nomDomaine etUsername:username withParent:self etPhoto:YES];
-    [objet startDownload];
+        FluxTelechargement *objet = [[FluxTelechargement alloc] initWithDomaine:_nomDomaine etUsername:username withParent:self etPhoto:imageOuMessage];
+        [objet startDownload];
 }
 
 -(NSDictionary *)getInfos:(NSString *)identifiant etTelechargement:(BOOL)telechargement {
@@ -176,7 +193,7 @@
             NSString *fichierDico = [[NSSearchPathForDirectoriesInDomains(NSCachesDirectory, NSUserDomainMask, YES) objectAtIndex:0] stringByAppendingString:[NSString stringWithFormat:@"/trombi/%@.plist",identifiant]];
             if (![[NSFileManager defaultManager] fileExistsAtPath:fichierDico]) {
                 if (reseau) {
-                    //[self getInfos:identifiant etTelechargement:YES];
+                    [self getInfos:identifiant etTelechargement:YES];
                 }
                 int i = [trombi indexOfObjectPassingTest:^BOOL(id obj, NSUInteger index, BOOL *stop) {
                     if ([[[trombi objectAtIndex:index] objectForKey:@"username"] isEqualToString:identifiant]) {
@@ -221,7 +238,7 @@
         if ([data writeToFile:fichierImage atomically:NO]) {
             [images setObject:image forKey:personne];
             
-            [[NSNotificationCenter defaultCenter] postNotificationName:@"imageTelecharge" object:nil userInfo:[NSDictionary dictionaryWithObjects:[NSArray arrayWithObjects:personne, [NSNumber numberWithBool:YES], nil] forKeys:[NSArray arrayWithObjects:@"username",@"succes", nil]]];
+            [[NSNotificationCenter defaultCenter] postNotificationName:@"imageTelecharge" object:nil userInfo:[NSDictionary dictionaryWithObjects:[NSArray arrayWithObjects:personne, [NSNumber numberWithBool:YES],[NSNumber numberWithBool:YES], nil] forKeys:[NSArray arrayWithObjects:@"username",@"succes",@"image", nil]]];
             
         }
     }
@@ -236,6 +253,8 @@
         NSString *fichierDico = [[NSSearchPathForDirectoriesInDomains(NSCachesDirectory, NSUserDomainMask, YES) objectAtIndex:0] stringByAppendingString:[NSString stringWithFormat:@"/trombi/%@.plist",personne]];
         if ([dico writeToFile:fichierDico atomically:NO]) {
             [messages setObject:dico forKey:personne];
+            
+            [[NSNotificationCenter defaultCenter] postNotificationName:@"messageTelecharge" object:nil userInfo:[NSDictionary dictionaryWithObjects:[NSArray arrayWithObjects:personne, [NSNumber numberWithBool:YES],[NSNumber numberWithBool:NO], nil] forKeys:[NSArray arrayWithObjects:@"username",@"succes",@"image", nil]]];
         }
     }
 }
@@ -243,33 +262,27 @@
 -(void)recupTout {
     NSString *dosImages = [[NSSearchPathForDirectoriesInDomains(NSCachesDirectory, NSUserDomainMask, YES) objectAtIndex:0] stringByAppendingString:@"/photos/"];
     NSString *donnees = [[NSSearchPathForDirectoriesInDomains(NSCachesDirectory, NSUserDomainMask, YES) objectAtIndex:0] stringByAppendingString:@"/trombi/"];
+    
     images = [NSMutableDictionary dictionaryWithCapacity:[trombi count]];
-    if (![[NSFileManager defaultManager] fileExistsAtPath:dosImages]) {
-        [[NSFileManager defaultManager] createDirectoryAtPath:dosImages withIntermediateDirectories:YES attributes:nil error: NULL];
-    }
-    else {
-        // Supprimer car pas vraiment utile et paralyse l'interface pendant un moment.
-        /*NSString *fichierPhoto;
-        for (NSDictionary *dico in trombi) {
-            fichierPhoto = [[NSSearchPathForDirectoriesInDomains(NSCachesDirectory, NSUserDomainMask, YES) objectAtIndex:0] stringByAppendingString:[NSString stringWithFormat:@"/photos/%@.jpg",[dico objectForKey:@"username"]]];
-            if ([[NSFileManager defaultManager] fileExistsAtPath:fichierPhoto]) {
-                [images setObject:[UIImage imageWithContentsOfFile:fichierPhoto] forKey:[dico objectForKey:@"username"]];
-            }
-        }*/
-        
-    }
+    telechargements = [NSMutableArray arrayWithCapacity:2*[trombi count]];
     
     if (![[NSFileManager defaultManager] fileExistsAtPath:donnees]) {
         [[NSFileManager defaultManager] createDirectoryAtPath:donnees withIntermediateDirectories:YES attributes:nil error: NULL];
-    }
-    
-    telechargements = [NSMutableArray arrayWithCapacity:2*[trombi count]];
-    
-    for (NSDictionary *dico in trombi) {
-        [self getInfos:[dico objectForKey:@"username"] etTelechargement:YES];
+        /*for (NSDictionary *dico in trombi) {
+            [self getImage:[dico objectForKey:@"username"] etTelechargement:YES];
+        }*/
     }
     for (NSDictionary *dico in trombi) {
-        [self getImage:[dico objectForKey:@"username"] etTelechargement:YES];
+        [self getInfos:[dico objectForKey:@"username"] etTelechargement:NO];
+    }
+    if (![[NSFileManager defaultManager] fileExistsAtPath:dosImages]) {
+        [[NSFileManager defaultManager] createDirectoryAtPath:dosImages withIntermediateDirectories:YES attributes:nil error: NULL];
+        /*for (NSDictionary *dico in trombi) {
+            [self getInfos:[dico objectForKey:@"username"] etTelechargement:YES];
+        }*/
+    }
+    for (NSDictionary *dico in trombi) {
+        [self getImage:[dico objectForKey:@"username"] etTelechargement:NO];
     }
     
     for (int i=0;i<40;i++) {
@@ -294,6 +307,9 @@
             [[NSNotificationCenter defaultCenter] postNotificationName:@"NoCookie" object:nil];
             NSLog(@"Echec site");
         }
+    }
+    else if (connection == recupTrombi) {
+        NSLog(@"Erreur chargement trombi");
     }
 }
 
@@ -371,9 +387,8 @@
         
         NSString *fichierTrombi = [[NSSearchPathForDirectoriesInDomains(NSCachesDirectory, NSUserDomainMask, YES) objectAtIndex:0] stringByAppendingString:@"/trombi.data"];
         trombi = [trombiTemp copy];
-        [[NSNotificationCenter defaultCenter] postNotificationName:@"tTelecharge" object:nil];
-        
         [self recupTout];
+        [[NSNotificationCenter defaultCenter] postNotificationName:@"tTelecharge" object:nil];
         
         [trombi writeToFile:fichierTrombi atomically:NO];
     }

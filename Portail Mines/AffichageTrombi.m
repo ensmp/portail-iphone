@@ -36,11 +36,13 @@
 
 -(void)changeUsername:(NSString *)username {
     identifiant = username;
-    [_vueImage setImage:[reseauTest getImage:username etTelechargement:NO]];
-    if (!_vueImage.image) {
-        [reseauTest chercheImage:username pourImage:YES];
-        [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(majImage:) name:@"imageTelecharge" object:nil];
-    }
+    [_vueImage setImage:[reseauTest getImage:username]];
+    
+    [reseauTest chercheImage:username pourImage:YES];
+    [reseauTest chercheImage:username pourImage:NO];
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(majImage:) name:@"imageTelecharge" object:nil];
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(majImage:) name:@"messageTelecharge" object:nil];
+    
     dico = [reseauTest getInfos:username etTelechargement:NO];
     if (dico) {
         [self.navigationItem setTitle:username];
@@ -59,8 +61,17 @@
 
 -(void)majImage:(NSNotification *)notif {
     if ([[[notif userInfo] objectForKey:@"username"] isEqualToString:identifiant]) {
-        [_vueImage setImage:[reseauTest getImage:identifiant etTelechargement:NO]];
-        [[NSNotificationCenter defaultCenter] removeObserver:self name:@"imageTelecharge" object:nil];
+        if ([[[notif userInfo] objectForKey:@"image"] boolValue]) {
+            [_vueImage setImage:[reseauTest getImage:identifiant]];
+            [[NSNotificationCenter defaultCenter] removeObserver:self name:@"imageTelecharge" object:nil];
+        }
+        else {
+            dico = [reseauTest getInfos:identifiant etTelechargement:NO];
+            if (dico) {
+                [_liste reloadData];
+            }
+            [[NSNotificationCenter defaultCenter] removeObserver:self name:@"messageTelecharge" object:nil];
+        }
     }
 }
 
@@ -74,13 +85,13 @@
     [layer setShadowOpacity:0.9f];
     [layer setShadowOffset: CGSizeMake(1, 3)];
     [layer setShadowRadius:4.0];
-    ((UIScrollView *)self.view).contentSize = CGSizeMake(640, 3000);
+    ((UIScrollView *)self.view).contentSize = CGSizeMake(320, 570);
     [_vueImage setClipsToBounds:NO];
     [_liste setDelegate:self];
     [_liste setDataSource:self];
     UIBarButtonItem *boutton = [[UIBarButtonItem alloc] initWithTitle:@"Ajouter" style:UIBarButtonItemStyleBordered target:self action:@selector(ajoutContact)];
     [self.navigationItem setRightBarButtonItem:boutton animated:NO];
-    [self changeUsername:identifiant];
+    //[self changeUsername:identifiant];
 }
 
 -(void)ajoutContact {
@@ -124,7 +135,7 @@
         ABRecordSetValue(nouveau, kABPersonEmailProperty, mails, NULL);
         
         // On ajoute la photo
-        UIImage *image = [reseauTest getImage:identifiant etTelechargement:NO];
+        UIImage *image = [reseauTest getImage:identifiant];
         if (image) {
             ABPersonSetImageData(nouveau, (__bridge CFDataRef)UIImageJPEGRepresentation(image, 1.0f), NULL);
         }
@@ -147,7 +158,10 @@
 
 // A partir d'ici, gestion de la table
 -(NSInteger)numberOfSectionsInTableView:(UITableView *)tableView {
-    return [elements count];
+    if (dico) {
+        return [elements count];
+    }
+    else return 0;
 }
 
 -(NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section {

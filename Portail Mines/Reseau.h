@@ -42,6 +42,7 @@
 -(NSArray *)getTrombi;
 -(NSArray *)getMessage;
 -(UIImage *)getImage:(NSString *)identifiant etTelechargement:(BOOL)telechargement;
+-(UIImage *)getImage:(NSString *)identifiant;
 -(NSDictionary *)getInfos:(NSString *)identifiant etTelechargement:(BOOL)telechargement;
 
 -(void)renvoieImage:(UIImage *)image forUsername:(NSString *)personne;

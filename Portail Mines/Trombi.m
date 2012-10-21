@@ -152,14 +152,14 @@
         NSDictionary *tableau = [copy objectAtIndex:[indexPath indexAtPosition:1]];
         cell.textLabel.text = [tableau objectForKey:@"last_name"];
         cell.detailTextLabel.text = [tableau objectForKey:@"first_name"];
-        cell.imageView.image = [reseauTest getImage:[tableau objectForKey:@"username"] etTelechargement:NO];
+        cell.imageView.image = [reseauTest getImage:[tableau objectForKey:@"username"]];
     }
     else {
         //NSDictionary *tableau = [[trombi filteredArrayUsingPredicate:[NSPredicate predicateWithFormat:@"last_name BEGINSWITH[cd] %@", [tab objectAtIndex:[indexPath indexAtPosition:0]]]] objectAtIndex:[indexPath indexAtPosition:1]];
         NSDictionary *tableau = [[trombiTrie objectAtIndex:[indexPath indexAtPosition:0]] objectAtIndex:[indexPath indexAtPosition:1]];
         cell.textLabel.text = [tableau objectForKey:@"last_name"];
         cell.detailTextLabel.text = [tableau objectForKey:@"first_name"];
-        UIImage *image = [reseauTest getImage:[tableau objectForKey:@"username"] etTelechargement:NO];
+        UIImage *image = [reseauTest getImage:[tableau objectForKey:@"username"]];
         if (image) {
             cell.imageView.image = image;
         }
