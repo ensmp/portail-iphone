@@ -54,7 +54,7 @@
         }
     }
     
-    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(chargeTrombi) name:@"tTelecharge" object:nil];
+    //[[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(chargeTrombi) name:@"tTelecharge" object:nil];
     _liste.tableHeaderView = searchBar;
     searchBar.autocorrectionType = UITextAutocorrectionTypeNo;
     copy = [[NSMutableArray alloc] init];
@@ -100,12 +100,22 @@
                 return YES;
             else return NO;
         }];
-        int i = 0;
-        while (![[trombiTrie objectAtIndex:i] containsObject:[trombi objectAtIndex:[set firstIndex]]]) {
-            i++;
+        NSIndexPath *indexPath;
+        if (!searching) {
+            int i = 0;
+            while (![[trombiTrie objectAtIndex:i] containsObject:[trombi objectAtIndex:[set firstIndex]]]) {
+                i++;
+            }
+            indexPath = [NSIndexPath indexPathForRow:[[trombiTrie objectAtIndex:i] indexOfObject:[trombi objectAtIndex:[set firstIndex]]] inSection:i];
+            [_liste reloadRowsAtIndexPaths:[NSArray arrayWithObject:indexPath] withRowAnimation:UITableViewRowAnimationAutomatic];
         }
-        NSIndexPath *indexPath = [NSIndexPath indexPathForRow:[[trombiTrie objectAtIndex:i] indexOfObject:[trombi objectAtIndex:[set firstIndex]]] inSection:i];
-        [_liste reloadRowsAtIndexPaths:[NSArray arrayWithObject:indexPath] withRowAnimation:UITableViewRowAnimationAutomatic];
+        else {
+            int i = [copy indexOfObject:[trombi objectAtIndex:[set firstIndex]]];
+            if (i <= [trombi count]) {
+                indexPath = [NSIndexPath indexPathForRow:i inSection:0];
+                [_liste reloadRowsAtIndexPaths:[NSArray arrayWithObject:indexPath] withRowAnimation:UITableViewRowAnimationAutomatic];
+            }
+        }
     }
 }
 
@@ -212,26 +222,31 @@
 
 -(void)searchBarTextDidBeginEditing:(UISearchBar *)newSearchBar {
     if ([trombiTrie count]) {
-        [copy removeAllObjects];
-        searching = YES;
-        peutSelect = NO;
-        _liste.scrollEnabled = NO;
-        [self.navigationController setNavigationBarHidden:YES animated:YES];
-        [newSearchBar setShowsCancelButton:YES animated:YES];
-        [_liste reloadSectionIndexTitles];
+        if ([[newSearchBar text] length] == 0) {
+            [copy removeAllObjects];
+            searching = YES;
+            peutSelect = NO;
+            _liste.scrollEnabled = NO;
+            [self.navigationController setNavigationBarHidden:YES animated:YES];
+            [newSearchBar setShowsCancelButton:YES animated:YES];
+            [_liste reloadSectionIndexTitles];
     
-        if (!overlay) {
-            overlay = [[OverlayViewController alloc] initWithNibName:@"OverlayViewController" bundle:[NSBundle mainBundle]];
-            CGFloat yaxis = self.navigationController.navigationBar.frame.size.height;
-            CGFloat width = self.view.frame.size.width;
-            CGFloat height = self.view.frame.size.height;
-            CGRect frame = CGRectMake(0, yaxis, width, height);
-            overlay.view.frame = frame;
-            overlay.view.backgroundColor = [UIColor grayColor];
-            overlay.view.alpha = 0.5;
-            [overlay setRv:self];
+            if (!overlay) {
+                overlay = [[OverlayViewController alloc] initWithNibName:@"OverlayViewController" bundle:[NSBundle mainBundle]];
+                CGFloat yaxis = self.navigationController.navigationBar.frame.size.height;
+                CGFloat width = self.view.frame.size.width;
+                CGFloat height = self.view.frame.size.height;
+                CGRect frame = CGRectMake(0, yaxis, width, height);
+                overlay.view.frame = frame;
+                overlay.view.backgroundColor = [UIColor grayColor];
+                overlay.view.alpha = 0.5;
+                [overlay setRv:self];
+            }
+            [_liste insertSubview:overlay.view aboveSubview:_liste];
         }
-        [_liste insertSubview:overlay.view aboveSubview:_liste];
+        else {
+            [self.navigationController setNavigationBarHidden:YES animated:YES];
+        }
     }
     else {
         [searchBar resignFirstResponder];
@@ -249,6 +264,7 @@
         searching = YES;
         peutSelect = YES;
         _liste.scrollEnabled = YES;
+        [_liste scrollRectToVisible:CGRectMake(0,0, 1, 1) animated:NO];
         [self searchTableView];
     }
     else {

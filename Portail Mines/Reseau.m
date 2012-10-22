@@ -275,6 +275,7 @@
     for (NSDictionary *dico in trombi) {
         [self getInfos:[dico objectForKey:@"username"] etTelechargement:NO];
     }
+    
     if (![[NSFileManager defaultManager] fileExistsAtPath:dosImages]) {
         [[NSFileManager defaultManager] createDirectoryAtPath:dosImages withIntermediateDirectories:YES attributes:nil error: NULL];
         /*for (NSDictionary *dico in trombi) {

@@ -36,27 +36,12 @@
 
 -(void)changeUsername:(NSString *)username {
     identifiant = username;
-    [_vueImage setImage:[reseauTest getImage:username]];
     
     [reseauTest chercheImage:username pourImage:YES];
     [reseauTest chercheImage:username pourImage:NO];
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(majImage:) name:@"imageTelecharge" object:nil];
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(majImage:) name:@"messageTelecharge" object:nil];
-    
     dico = [reseauTest getInfos:username etTelechargement:NO];
-    if (dico) {
-        [self.navigationItem setTitle:username];
-        [_prenom setText:[dico objectForKey:@"first_name"]];
-        [_nom setText:[dico objectForKey:@"last_name"]];
-        int i = [(NSNumber *)[dico objectForKey:@"promo"] intValue];
-        if (i < 10) {
-            [_promo setText:[@"P" stringByAppendingString:[NSString stringWithFormat:@"0%d",i]]];
-        }
-        else {
-            [_promo setText:[@"P" stringByAppendingString:[NSString stringWithFormat:@"%d",i]]];
-        }
-        [_liste reloadData];
-    }
 }
 
 -(void)majImage:(NSNotification *)notif {
@@ -91,8 +76,27 @@
     [_liste setDataSource:self];
     UIBarButtonItem *boutton = [[UIBarButtonItem alloc] initWithTitle:@"Ajouter" style:UIBarButtonItemStyleBordered target:self action:@selector(ajoutContact)];
     [self.navigationItem setRightBarButtonItem:boutton animated:NO];
-    //[self changeUsername:identifiant];
 }
+
+-(void)viewWillAppear:(BOOL)animated {
+    [super viewWillAppear:animated];
+    [_vueImage setImage:[reseauTest getImage:identifiant]];
+    if (dico) {
+        [self.navigationItem setTitle:identifiant];
+        [_prenom setText:[dico objectForKey:@"first_name"]];
+        [_nom setText:[dico objectForKey:@"last_name"]];
+        int i = [(NSNumber *)[dico objectForKey:@"promo"] intValue];
+        if (i < 10) {
+            [_promo setText:[@"P" stringByAppendingString:[NSString stringWithFormat:@"0%d",i]]];
+        }
+        else {
+            [_promo setText:[@"P" stringByAppendingString:[NSString stringWithFormat:@"%d",i]]];
+        }
+        [_liste reloadData];
+    }
+    [(UIScrollView *)self.view scrollRectToVisible:CGRectMake(0, 0, 1, 1) animated:NO];
+}
+
 
 -(void)ajoutContact {
     ABAddressBookRef addressbook = ABAddressBookCreateWithOptions(NULL, NULL);
@@ -199,8 +203,10 @@
         }
     }
     else if ([indexPath indexAtPosition:0] == 1) {
-        UIActionSheet *sheet = [[UIActionSheet alloc] initWithTitle:@"Mail?" delegate:self cancelButtonTitle:@"Annuler" destructiveButtonTitle:nil otherButtonTitles:@"Envoyer un mail", nil];
-        [sheet showFromTabBar:self.tabBarController.tabBar];
+        if (![[dico objectForKey:@"email"] isEqualToString:@""]) {
+            UIActionSheet *sheet = [[UIActionSheet alloc] initWithTitle:@"Mail?" delegate:self cancelButtonTitle:@"Annuler" destructiveButtonTitle:nil otherButtonTitles:@"Envoyer un mail", nil];
+            [sheet showFromTabBar:self.tabBarController.tabBar];
+        }
     }
     [_liste deselectRowAtIndexPath:indexPath animated:YES];
 }
