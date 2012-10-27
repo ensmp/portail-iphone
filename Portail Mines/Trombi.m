@@ -39,13 +39,24 @@
     _liste.scrollsToTop = YES;
     self.navigationController.navigationBar.barStyle = UIBarStyleBlack;
     
+    // On met le choix de tri
+    control = [[UISegmentedControl alloc] initWithItems:[NSArray arrayWithObjects:@"Alphabet",@"Promo",nil]];
+    [control setSegmentedControlStyle:UISegmentedControlStyleBar];
+    [control setSelectedSegmentIndex:0];
+    [control setWidth:100 forSegmentAtIndex:0];
+    [control setWidth:100 forSegmentAtIndex:1];
+    [control addTarget:self action:@selector(retriTrombi) forControlEvents:UIControlEventValueChanged];
+    self.navigationController.navigationBar.topItem.titleView = control;
+    
     trombi = [reseauTest getTrombi];
     trombiTrie = [[NSMutableArray alloc] initWithCapacity:27];
     tab = [NSArray arrayWithObjects:@"",@"A", @"B", @"C", @"D", @"E", @"F", @"G", @"H", @"I", @"J", @"K", @"L",@"M", @"N", @"O", @"P", @"Q", @"R", @"S", @"T", @"U", @"V", @"W", @"X",@"Y", @"Z", nil];
+    
     if (!trombi) {
         [_activite startAnimating];
         trombi = [[NSArray alloc] initWithObjects:nil];
         trombiTrie = [[NSMutableArray alloc] initWithCapacity:27];
+        [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(chargeTrombi) name:@"tTelecharge" object:nil];
     }
     // On crée les sous-tableaux si le trombi est chargé
     else {
@@ -53,14 +64,16 @@
             [trombiTrie addObject:[trombi filteredArrayUsingPredicate:[NSPredicate predicateWithFormat:@"last_name BEGINSWITH[cd] %@",s]]];
         }
     }
-    
-    //[[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(chargeTrombi) name:@"tTelecharge" object:nil];
+
     _liste.tableHeaderView = searchBar;
     searchBar.autocorrectionType = UITextAutocorrectionTypeNo;
     copy = [[NSMutableArray alloc] init];
     if ([trombi count] != 0) {
         [_liste scrollToRowAtIndexPath:[NSIndexPath indexPathForRow:0 inSection:1] atScrollPosition:UITableViewScrollPositionTop animated:NO];
     }
+    // Pour le basculement :
+    triAlphabet = YES;
+    
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(majImage:) name:@"imageTelecharge" object:nil];
 }
 
@@ -90,6 +103,38 @@
             [_liste scrollToRowAtIndexPath:[NSIndexPath indexPathForRow:0 inSection:1] atScrollPosition:UITableViewScrollPositionTop animated:NO];
             [_activite stopAnimating];
         }
+    }
+}
+
+-(void)retriTrombi {
+    if (([control selectedSegmentIndex] == 0) && triAlphabet) {
+        return;
+    }
+    else if (!([control selectedSegmentIndex] == 0) && !triAlphabet) {
+        return;
+    }
+    else if ([control selectedSegmentIndex] == 0) {
+        triAlphabet = YES;
+        [trombiTrie removeAllObjects];
+        tab = [NSArray arrayWithObjects:@"",@"A", @"B", @"C", @"D", @"E", @"F", @"G", @"H", @"I", @"J", @"K", @"L",@"M", @"N", @"O", @"P", @"Q", @"R", @"S", @"T", @"U", @"V", @"W", @"X",@"Y", @"Z", nil];
+        for (NSString *s in tab) {
+            [trombiTrie addObject:[trombi filteredArrayUsingPredicate:[NSPredicate predicateWithFormat:@"last_name BEGINSWITH[cd] %@",s]]];
+        }
+        [_liste reloadData];
+        [_liste scrollToRowAtIndexPath:[NSIndexPath indexPathForRow:0 inSection:1] atScrollPosition:UITableViewScrollPositionTop animated:NO];
+    }
+    else {
+        triAlphabet = NO;
+        [trombiTrie removeAllObjects];
+        NSMutableArray *temp = [NSMutableArray arrayWithObject:@""];
+        [temp addObjectsFromArray:[[[NSSet setWithArray:[trombi valueForKey:@"promo"]] allObjects] sortedArrayUsingDescriptors:[NSArray arrayWithObject:[NSSortDescriptor sortDescriptorWithKey:@"intValue" ascending:NO selector:@selector(compare:)]]]];
+        tab = temp; 
+        
+        for (NSNumber *s in tab) {
+            [trombiTrie addObject:[trombi filteredArrayUsingPredicate:[NSPredicate predicateWithFormat:@"promo == %d",[s intValue]]]];
+        }
+        [_liste reloadData];
+        [_liste scrollToRowAtIndexPath:[NSIndexPath indexPathForRow:0 inSection:1] atScrollPosition:UITableViewScrollPositionTop animated:NO];
     }
 }
 
@@ -127,7 +172,7 @@
     }
     else if ([trombiTrie count] == 0)
         return 0;
-    return 27;
+    return [tab count];
 }
 
 -(NSString *)tableView:(UITableView *)tableView titleForHeaderInSection:(NSInteger)section {
@@ -135,7 +180,19 @@
         return @"";
     }
     
-    return [tab objectAtIndex:section];
+    if (triAlphabet) {
+        return [tab objectAtIndex:section];
+    }
+    else if (section == 0) {
+        return @"";
+    }
+    else {
+        if ([[tab objectAtIndex:section] intValue] < 10) {
+            return [NSString stringWithFormat:@"P0%d",[[tab objectAtIndex:section] intValue]];
+        }
+        else
+            return [NSString stringWithFormat:@"P%d",[[tab objectAtIndex:section] intValue]];
+    }
 }
 
 -(NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section {
@@ -146,7 +203,6 @@
         return 0;
     }
     return [[trombiTrie objectAtIndex:section] count];
-    //return [[trombi filteredArrayUsingPredicate:[NSPredicate predicateWithFormat:@"last_name BEGINSWITH[cd] %@", [tab objectAtIndex:section]]] count];
 }
 
 -(UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath {
@@ -165,7 +221,7 @@
         cell.imageView.image = [reseauTest getImage:[tableau objectForKey:@"username"]];
     }
     else {
-        //NSDictionary *tableau = [[trombi filteredArrayUsingPredicate:[NSPredicate predicateWithFormat:@"last_name BEGINSWITH[cd] %@", [tab objectAtIndex:[indexPath indexAtPosition:0]]]] objectAtIndex:[indexPath indexAtPosition:1]];
+    
         NSDictionary *tableau = [[trombiTrie objectAtIndex:[indexPath indexAtPosition:0]] objectAtIndex:[indexPath indexAtPosition:1]];
         cell.textLabel.text = [tableau objectForKey:@"last_name"];
         cell.detailTextLabel.text = [tableau objectForKey:@"first_name"];
@@ -187,12 +243,13 @@
     }
     else {
         username = [[[trombiTrie objectAtIndex:[indexPath indexAtPosition:0]] objectAtIndex:[indexPath indexAtPosition:1]] objectForKey:@"username"];
-        //username = [[[trombi filteredArrayUsingPredicate:[NSPredicate predicateWithFormat:@"last_name BEGINSWITH[cd] %@", [tab objectAtIndex:[indexPath indexAtPosition:0]]]] objectAtIndex:[indexPath indexAtPosition:1]] objectForKey:@"username"];
+        
     }
     if (!vueDetail) {
         vueDetail = [[AffichageTrombi alloc] initWithNibName:@"AffichageTrombi" bundle:[NSBundle mainBundle] etReseau:reseauTest];
     }
     [vueDetail changeUsername:username];
+    [vueDetail majAffichage];
     [self.navigationController pushViewController:vueDetail animated:YES];
 }
 
@@ -202,21 +259,45 @@
     }
     else if ([trombiTrie count] == 0)
         return nil;
-    NSMutableArray *array = [NSMutableArray arrayWithArray:tab];
-    [array replaceObjectAtIndex:0 withObject:UITableViewIndexSearch];
-    return array;
+    
+    if (triAlphabet) {
+        NSMutableArray *array = [NSMutableArray arrayWithArray:tab];
+        [array replaceObjectAtIndex:0 withObject:UITableViewIndexSearch];
+        return array;
+    }
+    
+    // A partir d'ici, on remplace les nombres par des chaines pour les promos et on rajoute des bullet points pour remplir la barre
+    else {
+        NSMutableArray *array = [[NSMutableArray alloc] init];
+        [array addObject:UITableViewIndexSearch];
+        for (int i=1;i<[tab count];i++) {
+            [array addObject:@"\u2022"];
+            if ([[tab objectAtIndex:i] intValue] < 10) {
+                [array addObject:[NSString stringWithFormat:@"0%d",[[tab objectAtIndex:i] intValue]]];
+            }
+            else
+                [array addObject:[NSString stringWithFormat:@"%d",[[tab objectAtIndex:i] intValue]]];
+        }
+        
+        return array;
+    }
 }
 
 -(NSInteger)tableView:(UITableView *)tableView sectionForSectionIndexTitle:(NSString *)title atIndex:(NSInteger)index {
     if (searching) {
         return -1;
     }
+    // Si on sélectionne la loupe, on remonte la barre le plus haut possible.
     else if (index == 0) {
         [_liste setContentOffset:CGPointZero animated:NO];
         return NSNotFound;
     }
-    else {
+    else if (triAlphabet) {
         return index;
+    }
+    // Si l'on est en promo, on doit diviser par 2 pour enlever les points.
+    else {
+        return index/2;
     }
 }
 

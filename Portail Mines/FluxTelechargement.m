@@ -54,4 +54,8 @@
     data=nil;
 }
 
+-(void)connection:(NSURLConnection *)connection didFailWithError:(NSError *)error {
+    NSLog(@"Erreur");
+}
+
 @end

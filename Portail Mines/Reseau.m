@@ -9,6 +9,7 @@
 #import "Reseau.h"
 #import "FirstViewController.h"
 #import "FluxTelechargement.h"
+#import "KeychainItemWrapper.h"
 
 @implementation Reseau
 
@@ -49,15 +50,10 @@
     if ([existants count] == 0) {
         return NO;
     }
-    /*
-    CFMutableDictionaryRef dicoIdent = (__bridge CFMutableDictionaryRef)([[NSMutableDictionary alloc] initWithCapacity:3]);
-    CFDictionarySetValue(dicoIdent, kSecClass, kSecClassGenericPassword);
-    CFDictionarySetValue(dicoIdent, kSecAttrAccount, (CFStringRef)(username));
-    CFDictionarySetValue(dicoIdent, kSecReturnData, kCFBooleanTrue);
-    CFDictionarySetValue(dicoIdent, kSecValueData, (CFStringRef)(password));
-    CFDictionarySetValue(dicoIdent, kSecAttrService, CFSTR("identification"));
-    SecItemAdd(dicoIdent, NULL);
-     */
+
+    KeychainItemWrapper *key = [[KeychainItemWrapper alloc] initWithIdentifier:@"Identification" accessGroup:nil];
+    [key setObject:username forKey:(__bridge id)(kSecAttrAccount)];
+    [key setObject:password forKey:(__bridge id)(kSecValueData)];
     
     NSMutableURLRequest *getRequete = [[NSMutableURLRequest alloc] initWithURL:[NSURL URLWithString:[_nomDomaine stringByAppendingString:@"/accounts/login/"]]];
     [getRequete setHTTPMethod:@"POST"];
@@ -78,6 +74,9 @@
 
 -(BOOL)deconnexion {
     
+    KeychainItemWrapper *key = [[KeychainItemWrapper alloc] initWithIdentifier:@"Identification" accessGroup:nil];
+    [key resetKeychainItem];
+
     NSArray *existants = [[NSHTTPCookieStorage sharedHTTPCookieStorage] cookiesForURL:[NSURL URLWithString:_nomDomaine]];
     if ([existants count] == 2) {
         [[NSHTTPCookieStorage sharedHTTPCookieStorage] deleteCookie:[existants objectAtIndex:1]];
@@ -94,6 +93,12 @@
     [temp writeToFile:fichierDonnees atomically:NO];
     
     return YES;
+}
+
+//##################  EdT  ###################//
+
+-(void)getEmploiDuTemps:(NSString *)choix {
+    NSMutableURLRequest *getRequete = [[NSMutableURLRequest alloc] initWithURL:[NSURL URLWithString:[[[NSBundle mainBundle] objectForInfoDictionaryKey:@"Nom Intranet"] stringByAppendingString:@"Semaine/Encours1A.pdf"]] cachePolicy:NSURLRequestReloadIgnoringCacheData timeoutInterval:5];
 }
 
 //################## Trombi ##################//
@@ -114,6 +119,8 @@
 }
 
 -(NSArray *)getMessage {
+    // Pour la gestion des cookies
+    [[NSNotificationCenter defaultCenter] removeObserver:self name:@"Ok" object:nil];
     if (!message) {
         if (reseau) {
             NSMutableURLRequest *getRequete = [[NSMutableURLRequest alloc] initWithURL:[NSURL URLWithString:[_nomDomaine stringByAppendingString:@"/messages/json/"]] cachePolicy:NSURLRequestReloadIgnoringCacheData timeoutInterval:5];
@@ -256,6 +263,7 @@
             
             [[NSNotificationCenter defaultCenter] postNotificationName:@"messageTelecharge" object:nil userInfo:[NSDictionary dictionaryWithObjects:[NSArray arrayWithObjects:personne, [NSNumber numberWithBool:YES],[NSNumber numberWithBool:NO], nil] forKeys:[NSArray arrayWithObjects:@"username",@"succes",@"image", nil]]];
         }
+        else NSLog(@"c");
     }
 }
 
@@ -388,7 +396,9 @@
         
         NSString *fichierTrombi = [[NSSearchPathForDirectoriesInDomains(NSCachesDirectory, NSUserDomainMask, YES) objectAtIndex:0] stringByAppendingString:@"/trombi.data"];
         trombi = [trombiTemp copy];
-        [self recupTout];
+        
+        [self performSelectorInBackground:@selector(recupTout) withObject:nil];
+        
         [[NSNotificationCenter defaultCenter] postNotificationName:@"tTelecharge" object:nil];
         
         [trombi writeToFile:fichierTrombi atomically:NO];
@@ -399,6 +409,11 @@
         message = [NSJSONSerialization JSONObjectWithData:donneesRecues options:NSJSONReadingAllowFragments error:&error];
         if (error) {
             NSLog(@"Erreur lors du parsage");
+            
+            KeychainItemWrapper *key = [[KeychainItemWrapper alloc] initWithIdentifier:@"Identification" accessGroup:nil];
+            [self identification:[key objectForKey:(__bridge id)kSecAttrAccount] andPassword:[key objectForKey:(__bridge id)kSecValueData]];
+            [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(getMessage) name:@"Ok" object:nil];
+        
         }
         if (message) {
             NSString *fichierMessage = [[NSSearchPathForDirectoriesInDomains(NSCachesDirectory, NSUserDomainMask, YES) objectAtIndex:0] stringByAppendingString:@"/message.data"];

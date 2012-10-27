@@ -39,12 +39,18 @@
 -(BOOL)identification:(NSString *)username andPassword:(NSString *)password;
 -(BOOL)deconnexion;
 
--(NSArray *)getTrombi;
+// Emploi du temps
+-(void)getEmploiDuTemps:(NSString *)choix;
+
+// Messages
 -(NSArray *)getMessage;
+
+// Trombi
+-(NSArray *)getTrombi;
 -(UIImage *)getImage:(NSString *)identifiant etTelechargement:(BOOL)telechargement;
 -(UIImage *)getImage:(NSString *)identifiant;
 -(NSDictionary *)getInfos:(NSString *)identifiant etTelechargement:(BOOL)telechargement;
-
+// Pour la gestion des résultats
 -(void)renvoieImage:(UIImage *)image forUsername:(NSString *)personne;
 -(void)renvoieInfos:(NSDictionary *)dico forUsername:(NSString *)personne;
 -(void)chercheImage:(NSString *)username pourImage:(BOOL)imageOuMessage;

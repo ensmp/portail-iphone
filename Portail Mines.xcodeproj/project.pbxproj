@@ -37,6 +37,7 @@
 		49D03A701631FCF700DBD906 /* OverlayViewController.xib in Resources */ = {isa = PBXBuildFile; fileRef = 49D03A6E1631FCF700DBD906 /* OverlayViewController.xib */; };
 		49E07679162AEB0A00F7B511 /* Trombi.m in Sources */ = {isa = PBXBuildFile; fileRef = 49E07677162AEB0A00F7B511 /* Trombi.m */; };
 		49E0767A162AEB0A00F7B511 /* Trombi.xib in Resources */ = {isa = PBXBuildFile; fileRef = 49E07678162AEB0A00F7B511 /* Trombi.xib */; };
+		49E9FDE9163C2D030031E37E /* KeychainItemWrapper.m in Sources */ = {isa = PBXBuildFile; fileRef = 49E9FDE8163C2D030031E37E /* KeychainItemWrapper.m */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -93,6 +94,8 @@
 		49E07676162AEB0A00F7B511 /* Trombi.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Trombi.h; sourceTree = "<group>"; };
 		49E07677162AEB0A00F7B511 /* Trombi.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = Trombi.m; sourceTree = "<group>"; };
 		49E07678162AEB0A00F7B511 /* Trombi.xib */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.xib; path = Trombi.xib; sourceTree = "<group>"; };
+		49E9FDE7163C2D030031E37E /* KeychainItemWrapper.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = KeychainItemWrapper.h; sourceTree = "<group>"; };
+		49E9FDE8163C2D030031E37E /* KeychainItemWrapper.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = KeychainItemWrapper.m; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -174,6 +177,8 @@
 				49D03A6D1631FCF700DBD906 /* OverlayViewController.m */,
 				4909D6F8162C773500A1764A /* FluxTelechargement.h */,
 				4909D6F9162C773500A1764A /* FluxTelechargement.m */,
+				49E9FDE7163C2D030031E37E /* KeychainItemWrapper.h */,
+				49E9FDE8163C2D030031E37E /* KeychainItemWrapper.m */,
 				498A98341609FAB300C6225A /* FirstViewController.xib */,
 				49E07678162AEB0A00F7B511 /* Trombi.xib */,
 				498A9866160A14C000C6225A /* IdentificationViewController.xib */,
@@ -351,6 +356,7 @@
 				4909D6FA162C773500A1764A /* FluxTelechargement.m in Sources */,
 				49D03A6F1631FCF700DBD906 /* OverlayViewController.m in Sources */,
 				49306E07163421FC00E473D0 /* AffichageTrombi.m in Sources */,
+				49E9FDE9163C2D030031E37E /* KeychainItemWrapper.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

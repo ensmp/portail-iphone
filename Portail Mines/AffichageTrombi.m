@@ -30,6 +30,7 @@
         recode = [[NSDateFormatter alloc] init];
         [recode setDateFormat:@"dd MMMM yyyy"];
         [recode setLocale:[[NSLocale alloc] initWithLocaleIdentifier:@"fr_FR"]];
+        iOS6higher = ([[[UIDevice currentDevice] systemVersion] floatValue] >= 6.0);
     }
     return self;
 }
@@ -76,10 +77,10 @@
     [_liste setDataSource:self];
     UIBarButtonItem *boutton = [[UIBarButtonItem alloc] initWithTitle:@"Ajouter" style:UIBarButtonItemStyleBordered target:self action:@selector(ajoutContact)];
     [self.navigationItem setRightBarButtonItem:boutton animated:NO];
+    [self majAffichage];
 }
 
--(void)viewWillAppear:(BOOL)animated {
-    [super viewWillAppear:animated];
+-(void)majAffichage {
     [_vueImage setImage:[reseauTest getImage:identifiant]];
     if (dico) {
         [self.navigationItem setTitle:identifiant];
@@ -100,13 +101,16 @@
 
 -(void)ajoutContact {
     ABAddressBookRef addressbook = ABAddressBookCreateWithOptions(NULL, NULL);
-    if (ABAddressBookGetAuthorizationStatus() == kABAuthorizationStatusNotDetermined) {
-        ABAddressBookRequestAccessWithCompletion(addressbook,^(bool granted, CFErrorRef error) {
-            if (granted) {
-                [self ajoutContact];
-            }
-        });
-        return;
+
+    if (iOS6higher) {
+        if (ABAddressBookGetAuthorizationStatus() == kABAuthorizationStatusNotDetermined) {
+            ABAddressBookRequestAccessWithCompletion(addressbook,^(bool granted, CFErrorRef error) {
+                if (granted) {
+                    [self ajoutContact];
+                }
+            });
+            return;
+        }
     }
     
     if (ABAddressBookGetAuthorizationStatus() == kABAuthorizationStatusAuthorized) {
@@ -118,6 +122,7 @@
         
         for (int i = 0; i< CFArrayGetCount(trouve);i++) {
             if ([(__bridge NSString *)ABRecordCopyValue((ABRecordRef)CFArrayGetValueAtIndex(trouve, i),kABPersonFirstNameProperty) isEqualToString:[dico objectForKey:@"first_name"]]) {
+                CFRelease(nouveau);
                 nouveau = CFArrayGetValueAtIndex(trouve, i);
             }
         }
@@ -131,12 +136,14 @@
             ABMultiValueRef phones = ABMultiValueCreateMutable(kABMultiStringPropertyType);
             ABMultiValueAddValueAndLabel(phones, (__bridge CFTypeRef)([dico objectForKey:@"phone"]),kABPersonPhoneMobileLabel, NULL);
             ABRecordSetValue(nouveau, kABPersonPhoneProperty, phones, NULL);
+            CFRelease(phones);
         }
         
         //On ajoute l'adresse mail
         ABMultiValueRef mails = ABMultiValueCreateMutable(kABMultiStringPropertyType);
         ABMultiValueAddValueAndLabel(mails, (__bridge CFTypeRef)([dico objectForKey:@"email"]),kABWorkLabel, NULL);
         ABRecordSetValue(nouveau, kABPersonEmailProperty, mails, NULL);
+        CFRelease(mails);
         
         // On ajoute la photo
         UIImage *image = [reseauTest getImage:identifiant];
@@ -154,10 +161,13 @@
         ABAddressBookAddRecord(addressbook, nouveau, NULL);
         ABAddressBookSave(addressbook, &error);
         [[[UIAlertView alloc] initWithTitle:@"Contact" message:@"Contact ajouté" delegate:nil cancelButtonTitle:@"Ok" otherButtonTitles: nil] show];
+        CFRelease(nouveau);
     }
     else {
         [[[UIAlertView alloc] initWithTitle:@"Opération impossible" message:@"Accès aux contacts interdit" delegate:nil cancelButtonTitle:@"Dans ma gueule..." otherButtonTitles:nil] show];
     }
+    CFRelease(addressbook);
+    
 }
 
 // A partir d'ici, gestion de la table

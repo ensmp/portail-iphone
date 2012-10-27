@@ -26,8 +26,10 @@
     UINavigationController *controllerMessages = [[UINavigationController alloc] initWithRootViewController:viewController1];
     UIViewController *viewController2 = [[Trombi alloc] initWithNibName:@"Trombi" bundle:nil andNetwork:reseau];
     UINavigationController *controllerTrombi = [[UINavigationController alloc] initWithRootViewController:viewController2];
-    UIViewController *viewController3 = [[Trombi alloc] initWithNibName:@"Trombi" bundle:nil];
-    UIViewController *viewController4 = [[Trombi alloc] initWithNibName:@"Trombi" bundle:nil];
+    UIViewController *viewController3 = [[Trombi alloc] initWithNibName:@"Trombi" bundle:nil andNetwork:reseau];
+    UIViewController *viewController4 = [[Trombi alloc] initWithNibName:@"Trombi" bundle:nil andNetwork:reseau];
+    UIViewController *viewController5 = [[Trombi alloc] initWithNibName:@"Trombi" bundle:nil andNetwork:reseau];
+    UIViewController *viewController6 = [[Trombi alloc] initWithNibName:@"Trombi" bundle:nil andNetwork:reseau];
     
     
     // On cherche le fichier de pref. Si on ne l'a pas, on le crée
@@ -40,13 +42,13 @@
         [parametres writeToFile:writablePath atomically:YES];
     }
     
-    // On cherche le fichier contenant les prefs
+    // On cherche le fichier contenant les prefs d'onglets
     // S'il n'existe pas, on le crée
     NSArray *dico; //Pour l'ordre des onglets
     NSString *fichierPref = [[NSSearchPathForDirectoriesInDomains(NSLibraryDirectory, NSUserDomainMask, YES) objectAtIndex:0] stringByAppendingString:@"/infoApp.plist"];
     
     if (![[NSFileManager defaultManager] fileExistsAtPath:fichierPref]) {
-        dico = [NSArray arrayWithObjects:@"Messages",@"Trombi",@"Petits Cours",@"Médias", nil];
+        dico = [NSArray arrayWithObjects:@"Messages",@"Trombi",@"Petits Cours",@"Médias",@"Emplois du temps",@"Blabla", nil];
         NSArray *path = NSSearchPathForDirectoriesInDomains(NSLibraryDirectory, NSUserDomainMask, YES);
         NSString *chemin = [path objectAtIndex:0];
         NSString *writablePath = [chemin stringByAppendingString:@"/infoApp.plist"];
@@ -57,7 +59,7 @@
     }
     
     // On crée le tableau des onglets dans l'ordre
-    NSDictionary *dicoOnglets = [NSDictionary dictionaryWithObjects:[NSArray arrayWithObjects:controllerMessages,controllerTrombi,viewController3,viewController4, nil] forKeys:[NSArray arrayWithObjects:@"Messages",@"Trombi",@"Petits Cours",@"Médias",nil]];
+    dicoOnglets = [NSDictionary dictionaryWithObjects:[NSArray arrayWithObjects:controllerMessages,controllerTrombi,viewController3,viewController4,viewController5,viewController6, nil] forKeys:[NSArray arrayWithObjects:@"Messages",@"Trombi",@"Petits Cours",@"Médias",@"Emplois du temps",@"Blabla",nil]];
     
     NSMutableArray *onglets = [[NSMutableArray alloc] initWithCapacity:[dicoOnglets count]];
     for (id s in dico) {
@@ -67,9 +69,23 @@
     
     self.tabBarController = [[UITabBarController alloc] init];
     self.tabBarController.viewControllers = onglets;
+    self.tabBarController.delegate = self;
+    self.tabBarController.moreNavigationController.navigationBar.barStyle = UIBarStyleBlack;
     self.window.rootViewController = self.tabBarController;
     [self.window makeKeyAndVisible];
     return YES;
+}
+
+// On commence ici le delegate de la barre d'onglets
+-(void)tabBarController:(UITabBarController *)tabBarController didEndCustomizingViewControllers:(NSArray *)viewControllers changed:(BOOL)changed {
+    if (changed) {
+        NSMutableArray *dico = [[NSMutableArray alloc] initWithArray:viewControllers];
+        for (NSString *cle in dicoOnglets) {
+            [dico setObject:cle atIndexedSubscript:[viewControllers indexOfObject:[dicoOnglets objectForKey:cle]]];
+        }
+        NSString *fichierPref = [[NSSearchPathForDirectoriesInDomains(NSLibraryDirectory, NSUserDomainMask, YES) objectAtIndex:0] stringByAppendingString:@"/infoApp.plist"];
+        [dico writeToFile:fichierPref atomically:NO];
+    }
 }
 
 - (void)applicationWillResignActive:(UIApplication *)application
