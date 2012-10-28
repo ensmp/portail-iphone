@@ -71,6 +71,20 @@
         [onglets addObject:[dicoOnglets objectForKey:s]];
     }
     
+    // On crée les dossiers pour stocker les infos
+    NSString *dosImages = [[NSSearchPathForDirectoriesInDomains(NSCachesDirectory, NSUserDomainMask, YES) objectAtIndex:0] stringByAppendingString:@"/photos/"];
+    NSString *donnees = [[NSSearchPathForDirectoriesInDomains(NSCachesDirectory, NSUserDomainMask, YES) objectAtIndex:0] stringByAppendingString:@"/trombi/"];
+    if (![[NSFileManager defaultManager] fileExistsAtPath:donnees]) {
+        [[NSFileManager defaultManager] createDirectoryAtPath:donnees withIntermediateDirectories:YES attributes:nil error: NULL];
+    }
+    if (![[NSFileManager defaultManager] fileExistsAtPath:dosImages]) {
+        [[NSFileManager defaultManager] createDirectoryAtPath:dosImages withIntermediateDirectories:YES attributes:nil error: NULL];
+    }
+    NSString *edt = [[NSSearchPathForDirectoriesInDomains(NSCachesDirectory, NSUserDomainMask, YES) objectAtIndex:0] stringByAppendingString:@"/edt/"];
+    
+    if (![[NSFileManager defaultManager] fileExistsAtPath:edt]) {
+        [[NSFileManager defaultManager] createDirectoryAtPath:edt withIntermediateDirectories:YES attributes:nil error: NULL];
+    }
     
     self.tabBarController = [[UITabBarController alloc] init];
     self.tabBarController.viewControllers = onglets;

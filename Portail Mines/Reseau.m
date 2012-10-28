@@ -94,7 +94,6 @@
 
 //##################  EdT  ###################//
 -(void)obtentionEdts {
-    [self getEmploiDuTemps:nil];
     NSArray *nomEdt = [NSArray arrayWithObjects:@"Semaine/Encours1A.pdf",@"Semaine/Encours2A.pdf",@"Semaine/Encours3A.pdf",@"Semaine/Prochain1A.pdf",@"Semaine/Prochain2A.pdf",@"Semaine/Prochain3A.pdf", nil];
     for (NSString *s in nomEdt) {
         [self getEmploiDuTemps:s];
@@ -113,14 +112,6 @@
 }
 
 -(NSData *)getEmploiDuTemps:(NSString *)choix {
-    if (!choix) {
-        NSString *edt = [[NSSearchPathForDirectoriesInDomains(NSCachesDirectory, NSUserDomainMask, YES) objectAtIndex:0] stringByAppendingString:@"/edt/"];
-    
-        if (![[NSFileManager defaultManager] fileExistsAtPath:edt]) {
-            [[NSFileManager defaultManager] createDirectoryAtPath:edt withIntermediateDirectories:YES attributes:nil error: NULL];
-        }
-        return nil;
-    }
     
     if (!edtTelecharge) {
         edtTelecharge = [[NSMutableDictionary alloc] initWithCapacity:13];
@@ -149,9 +140,12 @@
         if ([[NSFileManager defaultManager] fileExistsAtPath:fichierTrombi]) {
             trombi = [[NSArray alloc] initWithContentsOfFile:fichierTrombi];
         }
-        if (!change && reseau) {
+        if (!change) {
             NSMutableURLRequest *getRequete = [[NSMutableURLRequest alloc] initWithURL:[NSURL URLWithString:[_nomDomaine stringByAppendingString:@"/people/json/"]] cachePolicy:NSURLRequestReloadIgnoringCacheData timeoutInterval:10];
-            recupTrombi = [[NSURLConnection alloc] initWithRequest:getRequete delegate:self];
+            recupTrombi = [[NSURLConnection alloc] initWithRequest:getRequete delegate:self startImmediately:NO];
+            [recupTrombi scheduleInRunLoop:[NSRunLoop mainRunLoop]
+                                  forMode:NSDefaultRunLoopMode];
+            [recupTrombi start];
             change = YES;
         }
     }
@@ -292,7 +286,6 @@
 }
 
 -(void)renvoieInfos:(NSDictionary *)dico forUsername:(NSString *)personne {
-    NSLog(@"b");
     if ([telechargements count]) {
         [[telechargements objectAtIndex:0] startDownload];
         [telechargements removeObjectAtIndex:0];
@@ -304,32 +297,15 @@
             
             [[NSNotificationCenter defaultCenter] postNotificationName:@"messageTelecharge" object:nil userInfo:[NSDictionary dictionaryWithObjects:[NSArray arrayWithObjects:personne, [NSNumber numberWithBool:YES],[NSNumber numberWithBool:NO], nil] forKeys:[NSArray arrayWithObjects:@"username",@"succes",@"image", nil]]];
         }
-        else NSLog(@"c");
     }
 }
 
 -(void)recupTout {
-    NSString *dosImages = [[NSSearchPathForDirectoriesInDomains(NSCachesDirectory, NSUserDomainMask, YES) objectAtIndex:0] stringByAppendingString:@"/photos/"];
-    NSString *donnees = [[NSSearchPathForDirectoriesInDomains(NSCachesDirectory, NSUserDomainMask, YES) objectAtIndex:0] stringByAppendingString:@"/trombi/"];
-    
     images = [NSMutableDictionary dictionaryWithCapacity:[trombi count]];
     telechargements = [NSMutableArray arrayWithCapacity:2*[trombi count]];
     
-    if (![[NSFileManager defaultManager] fileExistsAtPath:donnees]) {
-        [[NSFileManager defaultManager] createDirectoryAtPath:donnees withIntermediateDirectories:YES attributes:nil error: NULL];
-        /*for (NSDictionary *dico in trombi) {
-            [self getImage:[dico objectForKey:@"username"] etTelechargement:YES];
-        }*/
-    }
     for (NSDictionary *dico in trombi) {
         [self getInfos:[dico objectForKey:@"username"] etTelechargement:NO];
-    }
-    
-    if (![[NSFileManager defaultManager] fileExistsAtPath:dosImages]) {
-        [[NSFileManager defaultManager] createDirectoryAtPath:dosImages withIntermediateDirectories:YES attributes:nil error: NULL];
-        /*for (NSDictionary *dico in trombi) {
-            [self getInfos:[dico objectForKey:@"username"] etTelechargement:YES];
-        }*/
     }
     for (NSDictionary *dico in trombi) {
         [self getImage:[dico objectForKey:@"username"] etTelechargement:NO];
@@ -341,7 +317,7 @@
             [telechargements removeObjectAtIndex:0];
         }
     }
-    [self obtentionEdts];
+    //[self obtentionEdts];
 }
 
 //################## Délégué #################//
