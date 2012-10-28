@@ -38,6 +38,11 @@
 		49E07679162AEB0A00F7B511 /* Trombi.m in Sources */ = {isa = PBXBuildFile; fileRef = 49E07677162AEB0A00F7B511 /* Trombi.m */; };
 		49E0767A162AEB0A00F7B511 /* Trombi.xib in Resources */ = {isa = PBXBuildFile; fileRef = 49E07678162AEB0A00F7B511 /* Trombi.xib */; };
 		49E9FDE9163C2D030031E37E /* KeychainItemWrapper.m in Sources */ = {isa = PBXBuildFile; fileRef = 49E9FDE8163C2D030031E37E /* KeychainItemWrapper.m */; };
+		49E9FDFE163C47230031E37E /* VueEdt.m in Sources */ = {isa = PBXBuildFile; fileRef = 49E9FDFC163C47230031E37E /* VueEdt.m */; };
+		49E9FDFF163C47230031E37E /* VueEdt.xib in Resources */ = {isa = PBXBuildFile; fileRef = 49E9FDFD163C47230031E37E /* VueEdt.xib */; };
+		49E9FE03163C66480031E37E /* AffichageEdt.m in Sources */ = {isa = PBXBuildFile; fileRef = 49E9FE01163C66470031E37E /* AffichageEdt.m */; };
+		49E9FE04163C66480031E37E /* AffichageEdt.xib in Resources */ = {isa = PBXBuildFile; fileRef = 49E9FE02163C66470031E37E /* AffichageEdt.xib */; };
+		49E9FE07163C83DD0031E37E /* AffichagePhoto.m in Sources */ = {isa = PBXBuildFile; fileRef = 49E9FE06163C83DC0031E37E /* AffichagePhoto.m */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -57,7 +62,7 @@
 		49306E05163421FC00E473D0 /* AffichageTrombi.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = AffichageTrombi.m; sourceTree = "<group>"; };
 		49306E06163421FC00E473D0 /* AffichageTrombi.xib */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.xib; path = AffichageTrombi.xib; sourceTree = "<group>"; };
 		49306E0A1634356E00E473D0 /* Security.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Security.framework; path = System/Library/Frameworks/Security.framework; sourceTree = SDKROOT; };
-		493956C81632268000271BE0 /* Default-568h@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "Default-568h@2x.png"; sourceTree = "<group>"; };
+		493956C81632268000271BE0 /* Default-568h@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = "Default-568h@2x.png"; path = "../Default-568h@2x.png"; sourceTree = "<group>"; };
 		498A98101609FAB300C6225A /* Portail Mines.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Portail Mines.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		498A98141609FAB300C6225A /* UIKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = UIKit.framework; path = System/Library/Frameworks/UIKit.framework; sourceTree = SDKROOT; };
 		498A98161609FAB300C6225A /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
@@ -96,6 +101,14 @@
 		49E07678162AEB0A00F7B511 /* Trombi.xib */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.xib; path = Trombi.xib; sourceTree = "<group>"; };
 		49E9FDE7163C2D030031E37E /* KeychainItemWrapper.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = KeychainItemWrapper.h; sourceTree = "<group>"; };
 		49E9FDE8163C2D030031E37E /* KeychainItemWrapper.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = KeychainItemWrapper.m; sourceTree = "<group>"; };
+		49E9FDFB163C47230031E37E /* VueEdt.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = VueEdt.h; sourceTree = "<group>"; };
+		49E9FDFC163C47230031E37E /* VueEdt.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = VueEdt.m; sourceTree = "<group>"; };
+		49E9FDFD163C47230031E37E /* VueEdt.xib */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.xib; path = VueEdt.xib; sourceTree = "<group>"; };
+		49E9FE00163C66470031E37E /* AffichageEdt.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = AffichageEdt.h; sourceTree = "<group>"; };
+		49E9FE01163C66470031E37E /* AffichageEdt.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = AffichageEdt.m; sourceTree = "<group>"; };
+		49E9FE02163C66470031E37E /* AffichageEdt.xib */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.xib; path = AffichageEdt.xib; sourceTree = "<group>"; };
+		49E9FE05163C83DC0031E37E /* AffichagePhoto.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = AffichagePhoto.h; sourceTree = "<group>"; };
+		49E9FE06163C83DC0031E37E /* AffichagePhoto.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = AffichagePhoto.m; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -127,10 +140,6 @@
 		498A98051609FAB300C6225A = {
 			isa = PBXGroup;
 			children = (
-				49306E0A1634356E00E473D0 /* Security.framework */,
-				49B1724716337594000BBF0B /* AddressBook.framework */,
-				49B172441633758D000BBF0B /* Accounts.framework */,
-				493956C81632268000271BE0 /* Default-568h@2x.png */,
 				498A981A1609FAB300C6225A /* Portail Mines */,
 				498A98461609FAB300C6225A /* Portail MinesTests */,
 				498A98131609FAB300C6225A /* Frameworks */,
@@ -150,6 +159,9 @@
 		498A98131609FAB300C6225A /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				49306E0A1634356E00E473D0 /* Security.framework */,
+				49B1724716337594000BBF0B /* AddressBook.framework */,
+				49B172441633758D000BBF0B /* Accounts.framework */,
 				498A98141609FAB300C6225A /* UIKit.framework */,
 				498A98161609FAB300C6225A /* Foundation.framework */,
 				498A98181609FAB300C6225A /* CoreGraphics.framework */,
@@ -163,27 +175,12 @@
 			children = (
 				498A98231609FAB300C6225A /* AppDelegate.h */,
 				498A98241609FAB300C6225A /* AppDelegate.m */,
-				498A986E160A342100C6225A /* Reseau.h */,
-				498A986F160A342100C6225A /* Reseau.m */,
 				498A98261609FAB300C6225A /* FirstViewController.h */,
 				498A98271609FAB300C6225A /* FirstViewController.m */,
-				498A9864160A14C000C6225A /* IdentificationViewController.h */,
-				498A9865160A14C000C6225A /* IdentificationViewController.m */,
-				49E07676162AEB0A00F7B511 /* Trombi.h */,
-				49E07677162AEB0A00F7B511 /* Trombi.m */,
-				49306E04163421FC00E473D0 /* AffichageTrombi.h */,
-				49306E05163421FC00E473D0 /* AffichageTrombi.m */,
-				49D03A6C1631FCF700DBD906 /* OverlayViewController.h */,
-				49D03A6D1631FCF700DBD906 /* OverlayViewController.m */,
-				4909D6F8162C773500A1764A /* FluxTelechargement.h */,
-				4909D6F9162C773500A1764A /* FluxTelechargement.m */,
-				49E9FDE7163C2D030031E37E /* KeychainItemWrapper.h */,
-				49E9FDE8163C2D030031E37E /* KeychainItemWrapper.m */,
 				498A98341609FAB300C6225A /* FirstViewController.xib */,
-				49E07678162AEB0A00F7B511 /* Trombi.xib */,
-				498A9866160A14C000C6225A /* IdentificationViewController.xib */,
-				49D03A6E1631FCF700DBD906 /* OverlayViewController.xib */,
-				49306E06163421FC00E473D0 /* AffichageTrombi.xib */,
+				49E9FDF8163C46920031E37E /* Réseau */,
+				49E9FDF6163C46770031E37E /* Trombi */,
+				49E9FDFA163C46EC0031E37E /* Emploi du temps */,
 				498A981B1609FAB300C6225A /* Supporting Files */,
 			);
 			path = "Portail Mines";
@@ -227,8 +224,56 @@
 				498A985A160A0FEF00C6225A /* first@2x.png */,
 				498A98301609FAB300C6225A /* second.png */,
 				498A98321609FAB300C6225A /* second@2x.png */,
+				493956C81632268000271BE0 /* Default-568h@2x.png */,
 			);
 			name = Images;
+			sourceTree = "<group>";
+		};
+		49E9FDF6163C46770031E37E /* Trombi */ = {
+			isa = PBXGroup;
+			children = (
+				49E07676162AEB0A00F7B511 /* Trombi.h */,
+				49E07677162AEB0A00F7B511 /* Trombi.m */,
+				49306E04163421FC00E473D0 /* AffichageTrombi.h */,
+				49306E05163421FC00E473D0 /* AffichageTrombi.m */,
+				49E9FE05163C83DC0031E37E /* AffichagePhoto.h */,
+				49E9FE06163C83DC0031E37E /* AffichagePhoto.m */,
+				49D03A6C1631FCF700DBD906 /* OverlayViewController.h */,
+				49D03A6D1631FCF700DBD906 /* OverlayViewController.m */,
+				49E07678162AEB0A00F7B511 /* Trombi.xib */,
+				49D03A6E1631FCF700DBD906 /* OverlayViewController.xib */,
+				49306E06163421FC00E473D0 /* AffichageTrombi.xib */,
+			);
+			name = Trombi;
+			sourceTree = "<group>";
+		};
+		49E9FDF8163C46920031E37E /* Réseau */ = {
+			isa = PBXGroup;
+			children = (
+				498A9864160A14C000C6225A /* IdentificationViewController.h */,
+				498A9865160A14C000C6225A /* IdentificationViewController.m */,
+				498A986E160A342100C6225A /* Reseau.h */,
+				498A986F160A342100C6225A /* Reseau.m */,
+				4909D6F8162C773500A1764A /* FluxTelechargement.h */,
+				4909D6F9162C773500A1764A /* FluxTelechargement.m */,
+				49E9FDE7163C2D030031E37E /* KeychainItemWrapper.h */,
+				49E9FDE8163C2D030031E37E /* KeychainItemWrapper.m */,
+				498A9866160A14C000C6225A /* IdentificationViewController.xib */,
+			);
+			name = "Réseau";
+			sourceTree = "<group>";
+		};
+		49E9FDFA163C46EC0031E37E /* Emploi du temps */ = {
+			isa = PBXGroup;
+			children = (
+				49E9FDFB163C47230031E37E /* VueEdt.h */,
+				49E9FDFC163C47230031E37E /* VueEdt.m */,
+				49E9FE00163C66470031E37E /* AffichageEdt.h */,
+				49E9FE01163C66470031E37E /* AffichageEdt.m */,
+				49E9FE02163C66470031E37E /* AffichageEdt.xib */,
+				49E9FDFD163C47230031E37E /* VueEdt.xib */,
+			);
+			name = "Emploi du temps";
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -313,6 +358,8 @@
 				49D03A701631FCF700DBD906 /* OverlayViewController.xib in Resources */,
 				49306E08163421FC00E473D0 /* AffichageTrombi.xib in Resources */,
 				494EB03C16346C6F00FC2913 /* Default-568h@2x.png in Resources */,
+				49E9FDFF163C47230031E37E /* VueEdt.xib in Resources */,
+				49E9FE04163C66480031E37E /* AffichageEdt.xib in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -357,6 +404,9 @@
 				49D03A6F1631FCF700DBD906 /* OverlayViewController.m in Sources */,
 				49306E07163421FC00E473D0 /* AffichageTrombi.m in Sources */,
 				49E9FDE9163C2D030031E37E /* KeychainItemWrapper.m in Sources */,
+				49E9FDFE163C47230031E37E /* VueEdt.m in Sources */,
+				49E9FE03163C66480031E37E /* AffichageEdt.m in Sources */,
+				49E9FE07163C83DD0031E37E /* AffichagePhoto.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

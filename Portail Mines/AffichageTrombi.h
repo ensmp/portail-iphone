@@ -30,5 +30,6 @@
 -(void)changeUsername:(NSString *)username;
 -(void)majAffichage;
 -(id)initWithNibName:(NSString *)nibNameOrNil bundle:(NSBundle *)nibBundleOrNil etReseau:(Reseau *)reseau;
+-(void)photoSelect;
 
 @end

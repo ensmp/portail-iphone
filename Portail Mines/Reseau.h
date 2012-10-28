@@ -11,24 +11,28 @@
 
 @interface Reseau : NSObject <NSURLConnectionDelegate, NSURLConnectionDataDelegate> {
     @private
-    NSURLConnection *ident;
-    NSURLConnection *testReseau;
-    NSURLConnection *recupToken;
-    NSURLConnection *recupTrombi;
-    NSURLConnection *recupMessage;
-    NSURLConnection *recupPhoto;
-    BOOL reseau;
-    BOOL connecte;
-    BOOL change;
-    NSMutableData *donneesRecues;
-    NSArray *trombi;
-    NSArray *message;
-    NSString *identPhoto;
-    NSString *identInfo;
-    NSMutableDictionary *images;
-    NSMutableDictionary *messages;
+        NSURLConnection *ident;
+        NSURLConnection *testReseau;
+        NSURLConnection *recupToken;
+        NSURLConnection *recupTrombi;
+        NSURLConnection *recupMessage;
+        NSURLConnection *recupPhoto;
+        NSURLConnection *recupEdt;
+        BOOL reseau;
+        BOOL connecte;
+        BOOL change;
+        BOOL tentative;
+        NSMutableData *donneesRecues;
+        NSArray *trombi;
+        NSArray *message;
+        NSString *identPhoto;
+        NSString *identInfo;
+        NSMutableDictionary *images;
+        NSMutableDictionary *messages;
+        NSMutableDictionary *edtTelecharge;
+        long tailleTelechargement;
     
-    NSMutableArray *telechargements;
+        NSMutableArray *telechargements;
 }
 
 @property (nonatomic,strong) NSString *nomDomaine;
@@ -40,7 +44,8 @@
 -(BOOL)deconnexion;
 
 // Emploi du temps
--(void)getEmploiDuTemps:(NSString *)choix;
+-(NSData *)getEmploiDuTemps:(NSString *)choix;
+-(void)obtentionEdts;
 
 // Messages
 -(NSArray *)getMessage;

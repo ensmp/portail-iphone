@@ -22,6 +22,7 @@
     self = [super initWithNibName:nibNameOrNil bundle:nibBundleOrNil];
     if (self) {
         self.title = NSLocalizedString(@"Trombi", @"Trombi");
+        self.tabBarItem.title = @"Trombi";
         self.tabBarItem.image = [UIImage imageNamed:@"second.png"];
         reseauTest = reseau;
         searching = NO;
@@ -46,7 +47,7 @@
     [control setWidth:100 forSegmentAtIndex:0];
     [control setWidth:100 forSegmentAtIndex:1];
     [control addTarget:self action:@selector(retriTrombi) forControlEvents:UIControlEventValueChanged];
-    self.navigationController.navigationBar.topItem.titleView = control;
+    self.navigationItem.titleView = control;
     
     trombi = [reseauTest getTrombi];
     trombiTrie = [[NSMutableArray alloc] initWithCapacity:27];

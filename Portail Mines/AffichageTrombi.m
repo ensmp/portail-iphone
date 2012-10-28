@@ -10,6 +10,7 @@
 #import "Reseau.h"
 #import <QuartzCore/QuartzCore.h>
 #import <AddressBook/AddressBook.h>
+#import "AffichagePhoto.h"
 
 @interface AffichageTrombi ()
 
@@ -31,8 +32,14 @@
         [recode setDateFormat:@"dd MMMM yyyy"];
         [recode setLocale:[[NSLocale alloc] initWithLocaleIdentifier:@"fr_FR"]];
         iOS6higher = ([[[UIDevice currentDevice] systemVersion] floatValue] >= 6.0);
+        [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(changeOrientation:) name:UIDeviceOrientationDidChangeNotification object:[UIDevice currentDevice]];
     }
     return self;
+}
+
+-(void)changeOrientation:(NSNotification *)notif {
+    //UIDeviceOrientation orientation = [[UIDevice currentDevice] orientation];
+    ((UIScrollView *)self.view).contentSize = CGSizeMake([self view].bounds.size.width, _liste.bounds.size.height-20);
 }
 
 -(void)changeUsername:(NSString *)username {
@@ -71,13 +78,16 @@
     [layer setShadowOpacity:0.9f];
     [layer setShadowOffset: CGSizeMake(1, 3)];
     [layer setShadowRadius:4.0];
-    ((UIScrollView *)self.view).contentSize = CGSizeMake(320, 570);
+    ((UIScrollView *)self.view).contentSize = CGSizeMake([self view].bounds.size.width, _liste.bounds.size.height-20);
     [_vueImage setClipsToBounds:NO];
     [_liste setDelegate:self];
     [_liste setDataSource:self];
+    [_liste setAutoresizingMask:(UIViewAutoresizingFlexibleWidth)];
     UIBarButtonItem *boutton = [[UIBarButtonItem alloc] initWithTitle:@"Ajouter" style:UIBarButtonItemStyleBordered target:self action:@selector(ajoutContact)];
     [self.navigationItem setRightBarButtonItem:boutton animated:NO];
     [self majAffichage];
+    [_vueImage setUserInteractionEnabled:YES];
+    [_vueImage addGestureRecognizer:[[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(photoSelect)]];
 }
 
 -(void)majAffichage {
@@ -98,7 +108,18 @@
     [(UIScrollView *)self.view scrollRectToVisible:CGRectMake(0, 0, 1, 1) animated:NO];
 }
 
+// Affichage de la photo en grand
+-(void)photoSelect {
+    AffichagePhoto *controller = [[AffichagePhoto alloc] init];
+    UIImageView *vue = [[UIImageView alloc] initWithImage:[reseauTest getImage:identifiant]];
+    int largeur = [self view].bounds.size.height * ([vue bounds].size.width/[vue bounds].size.height);
+    int marge = ([self view].bounds.size.width - largeur)/2;
+    [vue setFrame:CGRectMake(marge, 0, largeur, [self view].bounds.size.height)];
+    [[controller view] addSubview:vue];
+    [self.navigationController pushViewController:controller animated:YES];
+}
 
+//###################### Ajout du contact au carnet d'adresses #######################
 -(void)ajoutContact {
     ABAddressBookRef addressbook = ABAddressBookCreateWithOptions(NULL, NULL);
 
@@ -170,7 +191,7 @@
     
 }
 
-// A partir d'ici, gestion de la table
+//###################### A partir d'ici, gestion de la table ######################
 -(NSInteger)numberOfSectionsInTableView:(UITableView *)tableView {
     if (dico) {
         return [elements count];
@@ -218,6 +239,35 @@
             [sheet showFromTabBar:self.tabBarController.tabBar];
         }
     }
+    else if ([indexPath indexAtPosition:0] == 4 || [indexPath indexAtPosition:0] == 5) {
+        
+        if (([indexPath indexAtPosition:0] == 4 && ![[dico objectForKey:@"parrain"] isEqualToString:@""]) || ([indexPath indexAtPosition:0] == 5 && ![[dico objectForKey:@"fillot"] isEqualToString:@""])) {
+            
+            AffichageTrombi *vueDetail = [[AffichageTrombi alloc] initWithNibName:@"AffichageTrombi" bundle:[NSBundle mainBundle] etReseau:reseauTest];
+            
+            if ([indexPath indexAtPosition:0] == 4) {
+                [vueDetail changeUsername:[dico objectForKey:@"parrain"]];
+            }
+            else {
+                [vueDetail changeUsername:[dico objectForKey:@"fillot"]];
+            }
+            [vueDetail majAffichage];
+            
+            // Début de l'animation
+            [UIView animateWithDuration:0.75
+                             animations:^{
+                                 [UIView setAnimationCurve:UIViewAnimationCurveEaseInOut];
+                                 [self.navigationController pushViewController:vueDetail animated:YES];
+                                 [UIView setAnimationTransition:UIViewAnimationTransitionFlipFromRight forView:self.navigationController.view cache:NO];
+                             }
+                             completion:^(BOOL finished){
+                                 NSMutableArray *tableau = [self.navigationController.viewControllers mutableCopy];
+                                 [tableau removeObjectAtIndex:[tableau count]-2];
+                                 [self.navigationController setViewControllers:tableau];
+                             }];
+            //[self pushViewController:vueDetail animated:YES completion:nil];
+        }
+    }
     [_liste deselectRowAtIndexPath:indexPath animated:YES];
 }
 
@@ -246,7 +296,7 @@
 
 -(NSIndexPath *)tableView:(UITableView *)tableView willSelectRowAtIndexPath:(NSIndexPath *)indexPath {
     NSInteger index = [indexPath indexAtPosition:0];
-    if (index > 1) {
+    if (index > 1 && index <4) {
         return nil;
     }
     else {
