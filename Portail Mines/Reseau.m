@@ -153,11 +153,11 @@
 }
 
 -(NSArray *)getMessage {
-    // Pour la gestion des cookies
     [[NSNotificationCenter defaultCenter] removeObserver:self name:@"Ok" object:nil];
     if (!message) {
         if (reseau) {
             NSMutableURLRequest *getRequete = [[NSMutableURLRequest alloc] initWithURL:[NSURL URLWithString:[_nomDomaine stringByAppendingString:@"/messages/json/"]] cachePolicy:NSURLRequestReloadIgnoringCacheData timeoutInterval:5];
+            //[getRequete setAllHTTPHeaderFields:[NSHTTPCookie requestHeaderFieldsWithCookies:[[NSHTTPCookieStorage sharedHTTPCookieStorage] cookiesForURL:[NSURL URLWithString:_nomDomaine]]]];
             recupMessage = [[NSURLConnection alloc] initWithRequest:getRequete delegate:self];
         }
         else {
@@ -236,13 +236,7 @@
                 if (reseau) {
                     [self getInfos:identifiant etTelechargement:YES];
                 }
-                int i = [trombi indexOfObjectPassingTest:^BOOL(id obj, NSUInteger index, BOOL *stop) {
-                    if ([[[trombi objectAtIndex:index] objectForKey:@"username"] isEqualToString:identifiant]) {
-                        return YES;
-                    }
-                    else return NO;
-                }];
-                return [trombi objectAtIndex:i];
+                return [[trombi filteredArrayUsingPredicate:[NSPredicate predicateWithFormat:@"username like %@",identifiant]] objectAtIndex:0];
             }
             else {
                 NSDictionary *dico = [NSDictionary dictionaryWithContentsOfFile:fichierDico];
@@ -405,6 +399,10 @@
             [connection cancel];
             connecte = YES;
             
+            NSDictionary *cookies = [(NSHTTPURLResponse *)response allHeaderFields];
+            NSHTTPCookie *cookie = [[NSHTTPCookie cookiesWithResponseHeaderFields:cookies forURL:[NSURL URLWithString:_nomDomaine]] objectAtIndex:0];
+            [[NSHTTPCookieStorage sharedHTTPCookieStorage] setCookie:cookie];
+            
             [[NSNotificationCenter defaultCenter] postNotification:[NSNotification notificationWithName:@"Ok" object:nil]];
             
             NSString *fichierDonnees = [[NSSearchPathForDirectoriesInDomains(NSLibraryDirectory, NSUserDomainMask, YES) objectAtIndex:0] stringByAppendingString:@"/parametres.plist"];
@@ -436,7 +434,6 @@
         
         NSString *fichierTrombi = [[NSSearchPathForDirectoriesInDomains(NSCachesDirectory, NSUserDomainMask, YES) objectAtIndex:0] stringByAppendingString:@"/trombi.data"];
         trombi = [trombiTemp copy];
-        
         //[self recupTout];
         [self performSelectorInBackground:@selector(recupTout) withObject:nil];
         
@@ -451,13 +448,12 @@
         if (error) {
             NSLog(@"Erreur lors du parsage");
             
-            if (tentative) {
+            if (!tentative) {
                 tentative = YES;
                 KeychainItemWrapper *key = [[KeychainItemWrapper alloc] initWithIdentifier:@"Identification" accessGroup:nil];
                 [self identification:[key objectForKey:(__bridge id)kSecAttrAccount] andPassword:[key objectForKey:(__bridge id)kSecValueData]];
                 [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(getMessage) name:@"Ok" object:nil];
             }
-            else tentative = NO;
         }
         if (message) {
             NSString *fichierMessage = [[NSSearchPathForDirectoriesInDomains(NSCachesDirectory, NSUserDomainMask, YES) objectAtIndex:0] stringByAppendingString:@"/message.data"];

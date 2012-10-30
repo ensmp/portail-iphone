@@ -24,8 +24,8 @@
     self = [super initWithNibName:nibNameOrNil bundle:nibBundleOrNil];
     if (self) {
         reseauTest = reseau;
-        elements = [NSArray arrayWithObjects:@"Téléphone",@"Mail",@"Chambre",@"Naissance",@"Parrain",@"Fillot", nil];
-        cles = [NSArray arrayWithObjects:@"phone",@"email",@"chambre",@"birthday",@"parrain",@"fillot", nil];
+        elements = [NSArray arrayWithObjects:@"Téléphone",@"Mail",@"Chambre",@"Naissance",@"Co",@"Parrain",@"Fillot", nil];
+        cles = [NSArray arrayWithObjects:@"phone",@"email",@"chambre",@"birthday",@"co",@"parrains",@"fillots", nil];
         decode = [[NSDateFormatter alloc] init];
         [decode setDateFormat:@"yyyy-MM-dd"];
         recode = [[NSDateFormatter alloc] init];
@@ -39,7 +39,9 @@
 
 -(void)changeOrientation:(NSNotification *)notif {
     //UIDeviceOrientation orientation = [[UIDevice currentDevice] orientation];
-    ((UIScrollView *)self.view).contentSize = CGSizeMake([self view].bounds.size.width, _liste.bounds.size.height-20);
+    [_liste sizeToFit];
+    ((UIScrollView *)self.view).contentSize = CGSizeMake([self view].bounds.size.width,_liste.bounds.size.height+[_liste frame].origin.y-10);
+    [(UIScrollView *)self.view scrollRectToVisible:CGRectMake(0, 0, 1, 1) animated:YES];
 }
 
 -(void)changeUsername:(NSString *)username {
@@ -62,6 +64,8 @@
             dico = [reseauTest getInfos:identifiant etTelechargement:NO];
             if (dico) {
                 [_liste reloadData];
+                [_liste sizeToFit];
+                ((UIScrollView *)self.view).contentSize = CGSizeMake([self view].bounds.size.width,_liste.bounds.size.height+[_liste frame].origin.y-10);
             }
             [[NSNotificationCenter defaultCenter] removeObserver:self name:@"messageTelecharge" object:nil];
         }
@@ -78,7 +82,7 @@
     [layer setShadowOpacity:0.9f];
     [layer setShadowOffset: CGSizeMake(1, 3)];
     [layer setShadowRadius:4.0];
-    ((UIScrollView *)self.view).contentSize = CGSizeMake([self view].bounds.size.width, _liste.bounds.size.height-20);
+    ((UIScrollView *)self.view).contentSize = CGSizeMake([self view].bounds.size.width,_liste.bounds.size.height+[_liste frame].origin.y-10);
     [_vueImage setClipsToBounds:NO];
     [_liste setDelegate:self];
     [_liste setDataSource:self];
@@ -105,6 +109,8 @@
         }
         [_liste reloadData];
     }
+    [_liste sizeToFit];
+    [self.view sizeToFit];
     [(UIScrollView *)self.view scrollRectToVisible:CGRectMake(0, 0, 1, 1) animated:NO];
 }
 
@@ -116,14 +122,16 @@
     int marge = ([self view].bounds.size.width - largeur)/2;
     [vue setFrame:CGRectMake(marge, 0, largeur, [self view].bounds.size.height)];
     [[controller view] addSubview:vue];
+    [controller.navigationItem setTitle:identifiant];
     [self.navigationController pushViewController:controller animated:YES];
 }
 
 //###################### Ajout du contact au carnet d'adresses #######################
 -(void)ajoutContact {
-    ABAddressBookRef addressbook = ABAddressBookCreateWithOptions(NULL, NULL);
 
-    if (iOS6higher) {
+    ABAddressBookRef addressbook;
+    if (!([[[UIDevice currentDevice] systemVersion] floatValue] < 6.0)) {
+        addressbook = ABAddressBookCreateWithOptions(NULL, NULL);
         if (ABAddressBookGetAuthorizationStatus() == kABAuthorizationStatusNotDetermined) {
             ABAddressBookRequestAccessWithCompletion(addressbook,^(bool granted, CFErrorRef error) {
                 if (granted) {
@@ -133,8 +141,11 @@
             return;
         }
     }
+    else {
+        addressbook = ABAddressBookCreate();
+    }
     
-    if (ABAddressBookGetAuthorizationStatus() == kABAuthorizationStatusAuthorized) {
+    if ([[[UIDevice currentDevice] systemVersion] floatValue] < 6.0 || ABAddressBookGetAuthorizationStatus() == kABAuthorizationStatusAuthorized) {
         CFArrayRef trouve = ABAddressBookCopyPeopleWithName(addressbook, (__bridge CFStringRef)([dico objectForKey:@"last_name"]));
         
         // On regarde si le contact existe déjà ou non
@@ -194,13 +205,25 @@
 //###################### A partir d'ici, gestion de la table ######################
 -(NSInteger)numberOfSectionsInTableView:(UITableView *)tableView {
     if (dico) {
+        for (NSString *key in elements) {
+            if ([[dico objectForKey:key] isKindOfClass:[NSString class]]) {
+                
+            }
+            else {}
+        }
+        
         return [elements count];
     }
     else return 0;
 }
 
 -(NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section {
-    return 1;
+    if (section < 4) {
+        return 1;
+    }
+    else {
+        return MAX([[dico objectForKey:[cles objectAtIndex:section]] count],1);
+    }
 }
 
 -(UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath {
@@ -218,8 +241,16 @@
         
         [cell.detailTextLabel setText:[recode stringFromDate:dateFormat]];
     }
-    else {
+    else if ([indexPath indexAtPosition:0] <3) {
         [cell.detailTextLabel setText:[dico objectForKey:[cles objectAtIndex:[indexPath indexAtPosition:0]]]];
+    }
+    else {
+        if (![[dico objectForKey:[cles objectAtIndex:[indexPath indexAtPosition:0]]] count]) {
+            [cell.detailTextLabel setText:@""];
+        }
+        else {
+            [cell.detailTextLabel setText:[[dico objectForKey:[cles objectAtIndex:[indexPath indexAtPosition:0]]] objectAtIndex:[indexPath indexAtPosition:1]]];
+        }
     }
     [cell setAccessoryType:UITableViewCellAccessoryNone];
     return cell;
@@ -229,7 +260,12 @@
     
     if ([indexPath indexAtPosition:0] == 0) {
         if (![[dico objectForKey:@"phone"] isEqualToString:@""]) {
-            telephone = [[UIActionSheet alloc] initWithTitle:@"Appeler?" delegate:self cancelButtonTitle:@"Annuler" destructiveButtonTitle:nil otherButtonTitles:@"Appeler",@"Envoyer un SMS", nil];
+                if ([[UIApplication sharedApplication] canOpenURL:[NSURL URLWithString:@"tel:"]]) {
+                    telephone = [[UIActionSheet alloc] initWithTitle:@"Téléphone?" delegate:self cancelButtonTitle:@"Annuler" destructiveButtonTitle:nil otherButtonTitles:@"Appeler",@"Envoyer un SMS", nil];
+                }
+                else {
+                    telephone = [[UIActionSheet alloc] initWithTitle:@"SMS?" delegate:self cancelButtonTitle:@"Annuler" destructiveButtonTitle:nil otherButtonTitles:@"Envoyer un SMS", nil];
+                }
             [telephone showFromTabBar:self.tabBarController.tabBar];
         }
     }
@@ -239,17 +275,20 @@
             [sheet showFromTabBar:self.tabBarController.tabBar];
         }
     }
-    else if ([indexPath indexAtPosition:0] == 4 || [indexPath indexAtPosition:0] == 5) {
+    else if ([indexPath indexAtPosition:0] > 3 ) {
         
-        if (([indexPath indexAtPosition:0] == 4 && ![[dico objectForKey:@"parrain"] isEqualToString:@""]) || ([indexPath indexAtPosition:0] == 5 && ![[dico objectForKey:@"fillot"] isEqualToString:@""])) {
+        if (([indexPath indexAtPosition:0] == 4 && [[dico objectForKey:@"co"] count]) || ([indexPath indexAtPosition:0] == 5 && [[dico objectForKey:@"parrains"] count]) || ([indexPath indexAtPosition:0] == 6 && [[dico objectForKey:@"fillots"] count])) {
             
             AffichageTrombi *vueDetail = [[AffichageTrombi alloc] initWithNibName:@"AffichageTrombi" bundle:[NSBundle mainBundle] etReseau:reseauTest];
             
             if ([indexPath indexAtPosition:0] == 4) {
-                [vueDetail changeUsername:[dico objectForKey:@"parrain"]];
+                [vueDetail changeUsername:[[dico objectForKey:@"co"] objectAtIndex:[indexPath indexAtPosition:1]]];
+            }
+            else if ([indexPath indexAtPosition:0] == 5) {
+                [vueDetail changeUsername:[[dico objectForKey:@"parrains"] objectAtIndex:[indexPath indexAtPosition:1]]];
             }
             else {
-                [vueDetail changeUsername:[dico objectForKey:@"fillot"]];
+                [vueDetail changeUsername:[[dico objectForKey:@"fillots"] objectAtIndex:[indexPath indexAtPosition:1]]];
             }
             [vueDetail majAffichage];
             
@@ -273,13 +312,13 @@
 
 -(void)actionSheet:(UIActionSheet *)actionSheet clickedButtonAtIndex:(NSInteger)buttonIndex {
     if (actionSheet == telephone) {
-        if (buttonIndex == 0) {
+        if (buttonIndex == 0 && [actionSheet numberOfButtons] == 3) {
             NSURL *url = [NSURL URLWithString:[NSString stringWithFormat:@"tel:%@",[[dico objectForKey:@"phone"] stringByReplacingOccurrencesOfString:@" " withString:@""]]];
             if ([[UIApplication sharedApplication] canOpenURL:url]) {
                 [[UIApplication sharedApplication] openURL:url];
             }
         }
-        else if (buttonIndex == 1) {
+        else if ((buttonIndex == 1 && [actionSheet numberOfButtons] == 3) || (buttonIndex == 0 && [actionSheet numberOfButtons] == 2)) {
             NSURL *url = [NSURL URLWithString:[NSString stringWithFormat:@"sms:%@",[[dico objectForKey:@"phone"] stringByReplacingOccurrencesOfString:@" " withString:@""]]];
             if ([[UIApplication sharedApplication] canOpenURL:url]) {
                 [[UIApplication sharedApplication] openURL:url];

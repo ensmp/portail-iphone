@@ -365,7 +365,7 @@
 -(void)searchTableView {
     NSString *searchText = searchBar.text;
     
-    [copy addObjectsFromArray:[trombi filteredArrayUsingPredicate:[NSPredicate predicateWithFormat:@"(last_name CONTAINS[cd] %@) OR (first_name CONTAINS[cd] %@)", searchText, searchText]]];
+    [copy addObjectsFromArray:[trombi filteredArrayUsingPredicate:[NSPredicate predicateWithFormat:@"(last_name CONTAINS[cd] %@) OR (first_name CONTAINS[cd] %@) OR (username CONTAINS[cd] %@)", searchText, searchText,searchText]]];
 }
 
 -(void)finRecherche:(id)sender {

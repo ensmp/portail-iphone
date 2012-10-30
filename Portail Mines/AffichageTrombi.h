@@ -15,6 +15,7 @@
     NSDictionary *dico;
     NSArray *elements;
     NSArray *cles;
+    NSArray *clesUtilisees;
     NSDateFormatter *decode;
     NSDateFormatter *recode;
     UIActionSheet *telephone;
