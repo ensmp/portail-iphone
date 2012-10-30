@@ -23,6 +23,8 @@
         NSMutableArray *copy;
         OverlayViewController *overlay;
         AffichageTrombi *vueDetail;
+        BOOL triAlphabet;
+        UISegmentedControl *control;
 }
 
 @property (strong, nonatomic) IBOutlet UITableView *liste;

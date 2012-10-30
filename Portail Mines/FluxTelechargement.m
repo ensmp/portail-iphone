@@ -30,7 +30,10 @@
 }
 
 -(void)startDownload {
-    connection = [[NSURLConnection alloc] initWithRequest:getRequete delegate:self];
+    connection = [[NSURLConnection alloc] initWithRequest:getRequete delegate:self startImmediately:NO];
+    [connection scheduleInRunLoop:[NSRunLoop mainRunLoop]
+                          forMode:NSDefaultRunLoopMode];
+    [connection start];
 }
 
 - (void)connection:(NSURLConnection *)theConnection didReceiveData:(NSData *)incrementalData {
@@ -47,11 +50,21 @@
         NSError *error;
         NSDictionary *dico = [NSJSONSerialization JSONObjectWithData:data options:NSJSONReadingAllowFragments error:&error];
         if (error) {
-            NSLog([error description]);
         }
         [reseau renvoieInfos:dico forUsername:personne];
     }
     data=nil;
+}
+
+-(void)connection:(NSURLConnection *)connection didFailWithError:(NSError *)error {
+    NSLog(@"Erreur time-out");
+    if (type) {
+        [reseau renvoieImage:nil forUsername:personne];
+    }
+    else {
+        [reseau renvoieInfos:nil forUsername:personne];
+    }
+
 }
 
 @end

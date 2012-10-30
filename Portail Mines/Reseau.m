@@ -9,6 +9,7 @@
 #import "Reseau.h"
 #import "FirstViewController.h"
 #import "FluxTelechargement.h"
+#import "KeychainItemWrapper.h"
 
 @implementation Reseau
 
@@ -23,8 +24,6 @@
 
 -(void)connectionDispo {
     NSMutableURLRequest *getRequete = [[NSMutableURLRequest alloc] initWithURL:[NSURL URLWithString:@"http://www.google.com"] cachePolicy:NSURLRequestReloadIgnoringCacheData timeoutInterval:5];
-    /*NSData *data = [NSURLConnection sendSynchronousRequest:getRequete returningResponse:nil error:nil];
-    return (data != nil ) ? YES : NO;*/
     testReseau = [[NSURLConnection alloc] initWithRequest:getRequete delegate:self];
 }
 
@@ -49,15 +48,10 @@
     if ([existants count] == 0) {
         return NO;
     }
-    /*
-    CFMutableDictionaryRef dicoIdent = (__bridge CFMutableDictionaryRef)([[NSMutableDictionary alloc] initWithCapacity:3]);
-    CFDictionarySetValue(dicoIdent, kSecClass, kSecClassGenericPassword);
-    CFDictionarySetValue(dicoIdent, kSecAttrAccount, (CFStringRef)(username));
-    CFDictionarySetValue(dicoIdent, kSecReturnData, kCFBooleanTrue);
-    CFDictionarySetValue(dicoIdent, kSecValueData, (CFStringRef)(password));
-    CFDictionarySetValue(dicoIdent, kSecAttrService, CFSTR("identification"));
-    SecItemAdd(dicoIdent, NULL);
-     */
+
+    KeychainItemWrapper *key = [[KeychainItemWrapper alloc] initWithIdentifier:@"Identification" accessGroup:nil];
+    [key setObject:username forKey:(__bridge id)(kSecAttrAccount)];
+    [key setObject:password forKey:(__bridge id)(kSecValueData)];
     
     NSMutableURLRequest *getRequete = [[NSMutableURLRequest alloc] initWithURL:[NSURL URLWithString:[_nomDomaine stringByAppendingString:@"/accounts/login/"]]];
     [getRequete setHTTPMethod:@"POST"];
@@ -72,12 +66,14 @@
     
     ident = [[NSURLConnection alloc] initWithRequest:getRequete delegate:self];
     
-    //[self performSelectorInBackground:@selector(connection:) withObject:getRequete];
     return YES;
 }
 
 -(BOOL)deconnexion {
     
+    KeychainItemWrapper *key = [[KeychainItemWrapper alloc] initWithIdentifier:@"Identification" accessGroup:nil];
+    [key resetKeychainItem];
+
     NSArray *existants = [[NSHTTPCookieStorage sharedHTTPCookieStorage] cookiesForURL:[NSURL URLWithString:_nomDomaine]];
     if ([existants count] == 2) {
         [[NSHTTPCookieStorage sharedHTTPCookieStorage] deleteCookie:[existants objectAtIndex:1]];
@@ -96,6 +92,46 @@
     return YES;
 }
 
+//##################  EdT  ###################//
+-(void)obtentionEdts {
+    NSArray *nomEdt = [NSArray arrayWithObjects:@"Semaine/Encours1A.pdf",@"Semaine/Encours2A.pdf",@"Semaine/Encours3A.pdf",@"Semaine/Prochain1A.pdf",@"Semaine/Prochain2A.pdf",@"Semaine/Prochain3A.pdf", nil];
+    for (NSString *s in nomEdt) {
+        [self getEmploiDuTemps:s];
+    }
+    int annee = [[[NSCalendar currentCalendar] components:NSYearCalendarUnit fromDate:[NSDate date]] year];
+    if ([[[NSCalendar currentCalendar] components:NSMonthCalendarUnit fromDate:[NSDate date]] month] < 9) {
+        annee--;
+    }
+    NSString *chaine;
+    for (int i=0;i<6;i++) {
+        chaine = [NSString stringWithFormat:@"%d/S%d_%d_%d.pdf",annee,i+1,annee%1000,annee%1000+1];
+        [self getEmploiDuTemps:chaine];
+    }
+    chaine = [NSString stringWithFormat:@"%d/VS.pdf",annee];
+    [self getEmploiDuTemps:chaine];
+}
+
+-(NSData *)getEmploiDuTemps:(NSString *)choix {
+    
+    if (!edtTelecharge) {
+        edtTelecharge = [[NSMutableDictionary alloc] initWithCapacity:13];
+    }
+    
+    NSString *fichierEdt = [[NSSearchPathForDirectoriesInDomains(NSCachesDirectory, NSUserDomainMask, YES) objectAtIndex:0] stringByAppendingString:[@"/edt/" stringByAppendingString:[[choix componentsSeparatedByString:@"/"] lastObject]]];
+    
+    if (reseau && ![[edtTelecharge objectForKey:[[choix componentsSeparatedByString:@"/"] lastObject]] boolValue]) {
+        NSMutableURLRequest *getRequete = [[NSMutableURLRequest alloc] initWithURL:[NSURL URLWithString:[[[NSBundle mainBundle] objectForInfoDictionaryKey:@"Nom Intranet"] stringByAppendingString:choix]] cachePolicy:NSURLRequestReloadIgnoringCacheData timeoutInterval:10];
+        recupEdt = [[NSURLConnection alloc] initWithRequest:getRequete delegate:self];
+        return nil;
+    }
+    else {
+        if ([[NSFileManager defaultManager] fileExistsAtPath:fichierEdt]) {
+            return [NSData dataWithContentsOfFile:fichierEdt];
+        }
+        else return nil;
+    }
+}
+
 //################## Trombi ##################//
 // Renvoie le trombi (ou nil s'il n'existe pas. Il faut donc penser à faire le teste. En cas d'attente (première connexion), il faut attendre la notification @"trombi" avant de charger à nouveau.
 -(NSArray *)getTrombi {
@@ -104,9 +140,12 @@
         if ([[NSFileManager defaultManager] fileExistsAtPath:fichierTrombi]) {
             trombi = [[NSArray alloc] initWithContentsOfFile:fichierTrombi];
         }
-        if (!change && reseau) {
+        if (!change) {
             NSMutableURLRequest *getRequete = [[NSMutableURLRequest alloc] initWithURL:[NSURL URLWithString:[_nomDomaine stringByAppendingString:@"/people/json/"]] cachePolicy:NSURLRequestReloadIgnoringCacheData timeoutInterval:10];
-            recupTrombi = [[NSURLConnection alloc] initWithRequest:getRequete delegate:self];
+            recupTrombi = [[NSURLConnection alloc] initWithRequest:getRequete delegate:self startImmediately:NO];
+            [recupTrombi scheduleInRunLoop:[NSRunLoop mainRunLoop]
+                                  forMode:NSDefaultRunLoopMode];
+            [recupTrombi start];
             change = YES;
         }
     }
@@ -114,9 +153,11 @@
 }
 
 -(NSArray *)getMessage {
+    [[NSNotificationCenter defaultCenter] removeObserver:self name:@"Ok" object:nil];
     if (!message) {
         if (reseau) {
             NSMutableURLRequest *getRequete = [[NSMutableURLRequest alloc] initWithURL:[NSURL URLWithString:[_nomDomaine stringByAppendingString:@"/messages/json/"]] cachePolicy:NSURLRequestReloadIgnoringCacheData timeoutInterval:5];
+            //[getRequete setAllHTTPHeaderFields:[NSHTTPCookie requestHeaderFieldsWithCookies:[[NSHTTPCookieStorage sharedHTTPCookieStorage] cookiesForURL:[NSURL URLWithString:_nomDomaine]]]];
             recupMessage = [[NSURLConnection alloc] initWithRequest:getRequete delegate:self];
         }
         else {
@@ -195,13 +236,7 @@
                 if (reseau) {
                     [self getInfos:identifiant etTelechargement:YES];
                 }
-                int i = [trombi indexOfObjectPassingTest:^BOOL(id obj, NSUInteger index, BOOL *stop) {
-                    if ([[[trombi objectAtIndex:index] objectForKey:@"username"] isEqualToString:identifiant]) {
-                        return YES;
-                    }
-                    else return NO;
-                }];
-                return [trombi objectAtIndex:i];
+                return [[trombi filteredArrayUsingPredicate:[NSPredicate predicateWithFormat:@"username like %@",identifiant]] objectAtIndex:0];
             }
             else {
                 NSDictionary *dico = [NSDictionary dictionaryWithContentsOfFile:fichierDico];
@@ -260,26 +295,11 @@
 }
 
 -(void)recupTout {
-    NSString *dosImages = [[NSSearchPathForDirectoriesInDomains(NSCachesDirectory, NSUserDomainMask, YES) objectAtIndex:0] stringByAppendingString:@"/photos/"];
-    NSString *donnees = [[NSSearchPathForDirectoriesInDomains(NSCachesDirectory, NSUserDomainMask, YES) objectAtIndex:0] stringByAppendingString:@"/trombi/"];
-    
     images = [NSMutableDictionary dictionaryWithCapacity:[trombi count]];
     telechargements = [NSMutableArray arrayWithCapacity:2*[trombi count]];
     
-    if (![[NSFileManager defaultManager] fileExistsAtPath:donnees]) {
-        [[NSFileManager defaultManager] createDirectoryAtPath:donnees withIntermediateDirectories:YES attributes:nil error: NULL];
-        /*for (NSDictionary *dico in trombi) {
-            [self getImage:[dico objectForKey:@"username"] etTelechargement:YES];
-        }*/
-    }
     for (NSDictionary *dico in trombi) {
         [self getInfos:[dico objectForKey:@"username"] etTelechargement:NO];
-    }
-    if (![[NSFileManager defaultManager] fileExistsAtPath:dosImages]) {
-        [[NSFileManager defaultManager] createDirectoryAtPath:dosImages withIntermediateDirectories:YES attributes:nil error: NULL];
-        /*for (NSDictionary *dico in trombi) {
-            [self getInfos:[dico objectForKey:@"username"] etTelechargement:YES];
-        }*/
     }
     for (NSDictionary *dico in trombi) {
         [self getImage:[dico objectForKey:@"username"] etTelechargement:NO];
@@ -291,6 +311,7 @@
             [telechargements removeObjectAtIndex:0];
         }
     }
+    //[self obtentionEdts];
 }
 
 //################## Délégué #################//
@@ -311,6 +332,18 @@
     else if (connection == recupTrombi) {
         NSLog(@"Erreur chargement trombi");
     }
+    
+    else if (connection == recupEdt) {
+        NSLog(@"Echec téléchargement Edt");
+        NSString *edt = [[[[[connection currentRequest] URL] absoluteString] componentsSeparatedByString:@"/"] lastObject];
+        [[NSNotificationCenter defaultCenter] postNotificationName:@"edtTelecharge" object:nil userInfo:[NSDictionary dictionaryWithObjects:[NSArray arrayWithObjects:NO,edt, nil] forKeys:[NSArray arrayWithObjects:@"succes",@"nom", nil]]];
+    }
+}
+
+-(void)connection:(NSURLConnection *)connection didReceiveAuthenticationChallenge:(NSURLAuthenticationChallenge *)challenge {
+    if (connection == recupEdt) {
+        [[challenge sender] useCredential:[NSURLCredential credentialWithUser:@"ensmp" password:@"mines" persistence:NSURLCredentialPersistenceForSession] forAuthenticationChallenge:challenge];
+    }
 }
 
 -(void)connection:(NSURLConnection *)connection didReceiveData:(NSData *)data {
@@ -319,8 +352,13 @@
         [[NSNotificationCenter defaultCenter] postNotificationName:@"connectionDispo" object:nil];
         [connection cancel];
     }
-    if (connection == recupTrombi || connection == recupMessage) {
+    else if (connection == recupTrombi || connection == recupMessage) {
         [donneesRecues appendData:data];
+    }
+    else if (connection == recupEdt) {
+        [donneesRecues appendData:data];
+        float progres = [donneesRecues length]/(float)tailleTelechargement;
+        [[NSNotificationCenter defaultCenter] postNotificationName:@"progresTelechargement" object:nil userInfo:[NSDictionary dictionaryWithObject:[NSNumber numberWithFloat:progres] forKey:@"progres"]];
     }
 }
 
@@ -338,15 +376,19 @@
             [[NSNotificationCenter defaultCenter] postNotificationName:@"NoCookie" object:nil];
         }
     }
-    if (connection == ident) {
+    else if (connection == ident) {
         if ([(NSHTTPURLResponse *)response statusCode] == 200) {
             [[NSNotificationCenter defaultCenter] postNotification:[NSNotification notificationWithName:@"Non" object:nil]];
             NSLog(@"Echec identification");
         }
     }
     
-    if (connection == recupTrombi || connection == recupMessage) {
+    else if (connection == recupTrombi || connection == recupMessage) {
         donneesRecues = [[NSMutableData alloc] initWithLength:0];
+    }
+    else if (connection == recupEdt) {
+        donneesRecues = [[NSMutableData alloc] initWithLength:0];
+        tailleTelechargement = [response expectedContentLength];
     }
 }
 
@@ -356,6 +398,10 @@
             NSLog(@"Succès");
             [connection cancel];
             connecte = YES;
+            
+            NSDictionary *cookies = [(NSHTTPURLResponse *)response allHeaderFields];
+            NSHTTPCookie *cookie = [[NSHTTPCookie cookiesWithResponseHeaderFields:cookies forURL:[NSURL URLWithString:_nomDomaine]] objectAtIndex:0];
+            [[NSHTTPCookieStorage sharedHTTPCookieStorage] setCookie:cookie];
             
             [[NSNotificationCenter defaultCenter] postNotification:[NSNotification notificationWithName:@"Ok" object:nil]];
             
@@ -375,6 +421,7 @@
             return request;
         }
     }
+    
     return request;
 }
 
@@ -387,7 +434,9 @@
         
         NSString *fichierTrombi = [[NSSearchPathForDirectoriesInDomains(NSCachesDirectory, NSUserDomainMask, YES) objectAtIndex:0] stringByAppendingString:@"/trombi.data"];
         trombi = [trombiTemp copy];
-        [self recupTout];
+        //[self recupTout];
+        [self performSelectorInBackground:@selector(recupTout) withObject:nil];
+        
         [[NSNotificationCenter defaultCenter] postNotificationName:@"tTelecharge" object:nil];
         
         [trombi writeToFile:fichierTrombi atomically:NO];
@@ -398,12 +447,35 @@
         message = [NSJSONSerialization JSONObjectWithData:donneesRecues options:NSJSONReadingAllowFragments error:&error];
         if (error) {
             NSLog(@"Erreur lors du parsage");
+            
+            if (!tentative) {
+                tentative = YES;
+                KeychainItemWrapper *key = [[KeychainItemWrapper alloc] initWithIdentifier:@"Identification" accessGroup:nil];
+                [self identification:[key objectForKey:(__bridge id)kSecAttrAccount] andPassword:[key objectForKey:(__bridge id)kSecValueData]];
+                [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(getMessage) name:@"Ok" object:nil];
+            }
         }
         if (message) {
             NSString *fichierMessage = [[NSSearchPathForDirectoriesInDomains(NSCachesDirectory, NSUserDomainMask, YES) objectAtIndex:0] stringByAppendingString:@"/message.data"];
             [message writeToFile:fichierMessage atomically:NO];
             NSLog(@"Messages téléchargés");
             [[NSNotificationCenter defaultCenter] postNotificationName:@"mTelecharge" object:nil];
+        }
+    }
+    
+    else if (connection == recupEdt) {
+        NSData *donneesPdf = donneesRecues;
+        NSString *edt = [[[[[connection currentRequest] URL] absoluteString] componentsSeparatedByString:@"/"] lastObject];
+        NSString *fichierImage = [[NSSearchPathForDirectoriesInDomains(NSCachesDirectory, NSUserDomainMask, YES) objectAtIndex:0] stringByAppendingString:[@"/edt/" stringByAppendingString:edt]];
+        
+        if ([donneesPdf writeToFile:fichierImage atomically:NO]) {
+            NSLog(@"Edt téléchargé");
+            [edtTelecharge setObject:[NSNumber numberWithBool:YES] forKey:edt];
+            [[NSNotificationCenter defaultCenter] postNotificationName:@"edtTelecharge" object:nil userInfo:[NSDictionary dictionaryWithObjects:[NSArray arrayWithObjects:[NSNumber numberWithBool:YES],edt, nil] forKeys:[NSArray arrayWithObjects:@"succes",@"nom", nil]]];
+        }
+        else {
+            NSLog(@"Erreur écriture edt");
+            [[NSNotificationCenter defaultCenter] postNotificationName:@"edtTelecharge" object:nil userInfo:[NSDictionary dictionaryWithObjects:[NSArray arrayWithObjects:[NSNumber numberWithBool:NO],edt, nil] forKeys:[NSArray arrayWithObjects:@"succes",@"nom", nil]]];
         }
     }
 }

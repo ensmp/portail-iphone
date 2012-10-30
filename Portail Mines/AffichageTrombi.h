@@ -15,9 +15,11 @@
     NSDictionary *dico;
     NSArray *elements;
     NSArray *cles;
+    NSArray *clesUtilisees;
     NSDateFormatter *decode;
     NSDateFormatter *recode;
     UIActionSheet *telephone;
+    BOOL iOS6higher;
 }
 
 @property (strong, nonatomic) IBOutlet UILabel *prenom;
@@ -27,6 +29,8 @@
 @property (strong, nonatomic) IBOutlet UITableView *liste;
 
 -(void)changeUsername:(NSString *)username;
+-(void)majAffichage;
 -(id)initWithNibName:(NSString *)nibNameOrNil bundle:(NSBundle *)nibBundleOrNil etReseau:(Reseau *)reseau;
+-(void)photoSelect;
 
 @end

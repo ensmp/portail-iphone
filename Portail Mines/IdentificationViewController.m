@@ -73,11 +73,13 @@
         if (![_username.text isEqualToString:@""]) {
             [self dismiss:nil];
         }
+        else [_username becomeFirstResponder];
     }
     else {
         if (![_password.text isEqualToString:@""]) {
             [self dismiss:nil];
         }
+        else [_password becomeFirstResponder];
     }
     return YES;
 }
