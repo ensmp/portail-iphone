@@ -32,12 +32,16 @@
 
 -(void)choixEdt:(NSString *)nomEdtNouveau {
     if ([nomEdtNouveau isEqualToString:nomEdt]) {
+        [_vueProgres setHidden:YES];
         return;
     }
     nomEdt = nomEdtNouveau;
+    
+    
+    
     NSData *fichier = [reseau getEmploiDuTemps:nomEdt];
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(edtChargement:) name:@"edtTelecharge" object:nil];
     if (!fichier) {
-        [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(edtChargement:) name:@"edtTelecharge" object:nil];
         [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(afficheProgres:) name:@"progresTelechargement" object:nil];
         [_vueProgres setHidden:NO];
         [_vuePDF setHidden:YES];
@@ -45,6 +49,7 @@
     }
     else {
         [_vuePDF setHidden:NO];
+        [_vueProgres setHidden:YES];
         [_vuePDF loadData:fichier MIMEType:@"application/pdf" textEncodingName:@"utf-8" baseURL:nil];
     }
 }
@@ -52,7 +57,7 @@
 -(void)edtChargement:(NSNotification *)notif {
     if ([[[notif userInfo] objectForKey:@"nom"] isEqualToString:[[nomEdt componentsSeparatedByString:@"/"] lastObject]]) {
         [[NSNotificationCenter defaultCenter] removeObserver:self name:@"edtTelecharge" object:nil];
-        [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(afficheProgres:) name:@"progresTelechargement" object:nil];
+        [[NSNotificationCenter defaultCenter] removeObserver:self name:@"progresTelechargement" object:nil];
         
         [_vueProgres setHidden:YES];
         if ([[[notif userInfo] objectForKey:@"succes"] boolValue]) {
@@ -60,7 +65,7 @@
             [_vuePDF loadData:fichier MIMEType:@"application/pdf" textEncodingName:@"utf-8" baseURL:nil];
             [_vuePDF setHidden:NO];
         }
-        else {
+        else if ([_vuePDF isHidden]) {
             UIAlertView *alert = [[UIAlertView alloc] initWithTitle:@"Pas de chance" message:@"Impossible de télécharger l'emploi du temps" delegate:nil cancelButtonTitle:@"J'irai pas en cours alors..." otherButtonTitles:nil];
             [alert setDelegate:self];
             [alert show];
@@ -80,6 +85,36 @@
 {
     [super didReceiveMemoryWarning];
     // Dispose of any resources that can be recreated.
+}
+
+- (BOOL)shouldAutorotateToInterfaceOrientation:(UIInterfaceOrientation)interfaceOrientation {
+    return ((interfaceOrientation == UIInterfaceOrientationPortrait) || (interfaceOrientation == UIInterfaceOrientationLandscapeLeft) || (interfaceOrientation == UIInterfaceOrientationLandscapeRight));
+}
+
+-(void)viewDidUnload {
+    [self setVuePDF:nil];
+    [self setVueProgres:nil];
+    reseau = nil;
+    nomEdt = nil;
+    [super viewDidUnload];
+}
+
+-(void)applicationWillResignActive {
+    [_vueProgres setHidden:YES];
+    [[NSNotificationCenter defaultCenter] removeObserver:self name:@"edtTelecharge" object:nil];
+    [[NSNotificationCenter defaultCenter] removeObserver:self name:@"progresTelechargement" object:nil];
+}
+
+-(void)applicationDidEnterBackground {}
+-(void)applicationWillEnterForeground {
+    if (nomEdt && [_vuePDF isHidden]) {
+        NSString *temp = nomEdt;
+        nomEdt = nil;
+        [self choixEdt:temp];
+    }
+}
+
+-(void)applicationDidBecomeActive {
 }
 
 @end

@@ -7,7 +7,24 @@
 //
 
 #import <UIKit/UIKit.h>
+#import <MessageUI/MessageUI.h>
+#import "AffichageReglage.h"
+@class Reseau;
+@class GestionConnexion;
 
-@interface VueCredits : UIViewController
+@interface VueCredits : UIViewController <MFMailComposeViewControllerDelegate, FlipSideDelegate> {
+    NSDictionary *listeAdresse;
+    Reseau *reseau;
+    GestionConnexion *connexion;
+}
+
+- (id)initWithNibName:(NSString *)nibNameOrNil bundle:(NSBundle *)nibBundleOrNil andNetwork:(Reseau *)reseau;
+-(IBAction)envoieMail:(id)sender;
+-(IBAction)deconnexion:(id)sender;
+
+-(void)applicationWillResignActive;
+-(void)applicationDidEnterBackground;
+-(void)applicationWillEnterForeground;
+-(void)applicationDidBecomeActive;
 
 @end

@@ -11,7 +11,7 @@
 @class OverlayViewController;
 @class AffichageTrombi;
 
-@interface Trombi : UIViewController <UITableViewDelegate, UITableViewDataSource, UISearchBarDelegate> {
+@interface Trombi : UIViewController <UITableViewDelegate, UITableViewDataSource, UISearchBarDelegate, UIScrollViewDelegate> {
     @private
         Reseau *reseauTest;
         NSArray *trombi;
@@ -25,6 +25,9 @@
         AffichageTrombi *vueDetail;
         BOOL triAlphabet;
         UISegmentedControl *control;
+    
+        // Pour le téléphone
+        NSNumberFormatter *formatter;
 }
 
 @property (strong, nonatomic) IBOutlet UITableView *liste;
@@ -33,5 +36,11 @@
 
 -(id)initWithNibName:(NSString *)nibNameOrNil bundle:(NSBundle *)nibBundleOrNil andNetwork:(Reseau *)reseau;
 -(void)finRecherche:(id)sender;
+-(BOOL)affichagePersonne:(NSString *)username;
+
+-(void)applicationWillResignActive;
+-(void)applicationDidEnterBackground;
+-(void)applicationWillEnterForeground;
+-(void)applicationDidBecomeActive;
 
 @end

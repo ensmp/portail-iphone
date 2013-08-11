@@ -35,10 +35,5 @@
     coordinate = newCoordinate;
 }
 
--(void)dealloc {
-    [title release];
-    [subtitle release];
-    [super dealloc];
-}
 
 @end

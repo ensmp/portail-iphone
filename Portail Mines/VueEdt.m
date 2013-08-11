@@ -21,8 +21,8 @@
     self = [super initWithNibName:nibNameOrNil bundle:nibBundleOrNil];
     if (self) {
         self.title = NSLocalizedString(@"Emploi du temps", @"Emploi du temps");
-        self.tabBarItem.title = @"Edt";
-        self.tabBarItem.image = [UIImage imageNamed:@"second.png"];
+        self.tabBarItem.title = @"Emploi du temps";
+        self.tabBarItem.image = [UIImage imageNamed:@"edt.png"];
         reseau = reseauTest;
         edts = [NSArray arrayWithObjects:@"Première année",@"Deuxième année", @"Troisième année",@"Le début...",@"La campagne",@"Les responsabilités",@"Le stress des stages",@"Le début de l'aigritude", @"L'aigritude à son paroxisme", @"Pour les ptits nouveaux de 3A", nil];
         nomEdt = [NSArray arrayWithObjects:@"Semaine/Encours1A.pdf",@"Semaine/Encours2A.pdf",@"Semaine/Encours3A.pdf",@"Semaine/Prochain1A.pdf",@"Semaine/Prochain2A.pdf",@"Semaine/Prochain3A.pdf", nil];
@@ -33,7 +33,7 @@
 - (void)viewDidLoad
 {
     [super viewDidLoad];
-    self.navigationController.navigationBar.barStyle = UIBarStyleBlack;
+    //self.navigationController.navigationBar.barStyle = UIBarStyleBlack;
     [_liste setDelegate:self];
     [_liste setDataSource:self];
 }
@@ -112,6 +112,9 @@
     if (!affichage) {
         affichage = [[AffichageEdt alloc] initWithNibName:@"AffichageEdt" bundle:[NSBundle mainBundle] andNetwork:reseau];
     }
+
+    [self.navigationController pushViewController:affichage animated:YES];
+    
     if ([indexPath indexAtPosition:0] == 0 || [indexPath indexAtPosition:0] == 1) {
         [affichage choixEdt:[nomEdt objectAtIndex:[indexPath indexAtPosition:0]*3+[indexPath indexAtPosition:1]]];
     }
@@ -128,13 +131,43 @@
         NSString *chaine = [NSString stringWithFormat:@"%d/VS.pdf",annee];
         [affichage choixEdt:chaine];
     }
-    [self.navigationController pushViewController:affichage animated:YES];
 }
 
 - (void)didReceiveMemoryWarning
 {
     [super didReceiveMemoryWarning];
+    affichage = nil;
     // Dispose of any resources that can be recreated.
+}
+
+- (BOOL)shouldAutorotateToInterfaceOrientation:(UIInterfaceOrientation)interfaceOrientation {
+    return ((interfaceOrientation == UIInterfaceOrientationPortrait) || (interfaceOrientation == UIInterfaceOrientationLandscapeLeft) || (interfaceOrientation == UIInterfaceOrientationLandscapeRight));
+}
+
+-(void)viewDidUnload {
+    [self setListe:nil];
+    reseau = nil;
+    edts = nil;
+    nomEdt = nil;
+    affichage = nil;
+    [super viewDidUnload];
+}
+
+- (void)applicationWillResignActive {
+    if (affichage)
+        [affichage applicationWillResignActive];
+}
+
+- (void)applicationDidEnterBackground {
+    
+}
+
+- (void)applicationWillEnterForeground {
+    if (affichage)
+        [affichage applicationWillEnterForeground];
+}
+
+- (void)applicationDidBecomeActive {
 }
 
 @end

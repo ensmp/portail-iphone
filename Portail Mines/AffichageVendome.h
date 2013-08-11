@@ -7,7 +7,19 @@
 //
 
 #import <UIKit/UIKit.h>
+@class Reseau;
 
-@interface AffichageVendome : UIViewController
+@interface AffichageVendome : UIViewController <UIAlertViewDelegate> {
+    @private
+        Reseau *reseau;
+        NSDictionary *dicoVendomeActuel;
+}
+
+@property (strong, nonatomic) IBOutlet UIWebView *vuePDF;
+@property (strong, nonatomic) IBOutlet UIProgressView *vueProgres;
+
+-(id)initWithNibName:(NSString *)nibNameOrNil bundle:(NSBundle *)nibBundleOrNil andNetwork:(Reseau *)reseau;
+-(void)choixVendome:(NSDictionary *)dicoVendome;
+
 
 @end

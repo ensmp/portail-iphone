@@ -13,28 +13,40 @@
 
 @implementation Reseau
 
+@synthesize messagesChat = _messagesChat;
+
 -(id)init {
-    
+    self = [super init];
     if (self) {
         _nomDomaine = [[NSBundle mainBundle] objectForInfoDictionaryKey:@"Nom Domaine"];
+        formatter = [[NSDateFormatter alloc] init];
+        [formatter setDateFormat:@"yyyy-MM-dd"];
+        deformatter = [[NSDateFormatter alloc] init];
+        [deformatter setDateFormat:@"dd/MM/yyyy"];
+        decalage = [[NSDateComponents alloc] init];
+        
+        majListe = NO;
     }
     
     return self;
 }
 
+// A garder
 -(void)connectionDispo {
     NSMutableURLRequest *getRequete = [[NSMutableURLRequest alloc] initWithURL:[NSURL URLWithString:@"http://www.google.com"] cachePolicy:NSURLRequestReloadIgnoringCacheData timeoutInterval:5];
     testReseau = [[NSURLConnection alloc] initWithRequest:getRequete delegate:self];
 }
 
+// A supprimer
 -(BOOL)dejaConnecte {
-    NSString *fichierDonnees = [[NSSearchPathForDirectoriesInDomains(NSLibraryDirectory, NSUserDomainMask, YES) objectAtIndex:0] stringByAppendingString:@"/parametres.plist"];
+    /*NSString *fichierDonnees = [[NSSearchPathForDirectoriesInDomains(NSLibraryDirectory, NSUserDomainMask, YES) objectAtIndex:0] stringByAppendingString:@"/parametres.plist"];
     if ([(NSNumber *)[[NSDictionary dictionaryWithContentsOfFile:fichierDonnees] objectForKey:@"dejaConnecte"] boolValue]) {
         return YES;
     }
     else {
         return NO;
-    }
+    }*/
+    return [[NSUserDefaults standardUserDefaults] boolForKey:@"dejaConnecte"];
 }
 
 -(void)getToken {
@@ -52,6 +64,7 @@
     KeychainItemWrapper *key = [[KeychainItemWrapper alloc] initWithIdentifier:@"Identification" accessGroup:nil];
     [key setObject:username forKey:(__bridge id)(kSecAttrAccount)];
     [key setObject:password forKey:(__bridge id)(kSecValueData)];
+    key = nil;
     
     NSMutableURLRequest *getRequete = [[NSMutableURLRequest alloc] initWithURL:[NSURL URLWithString:[_nomDomaine stringByAppendingString:@"/accounts/login/"]]];
     [getRequete setHTTPMethod:@"POST"];
@@ -73,21 +86,26 @@
     
     KeychainItemWrapper *key = [[KeychainItemWrapper alloc] initWithIdentifier:@"Identification" accessGroup:nil];
     [key resetKeychainItem];
+    key = nil;
 
     NSArray *existants = [[NSHTTPCookieStorage sharedHTTPCookieStorage] cookiesForURL:[NSURL URLWithString:_nomDomaine]];
-    if ([existants count] == 2) {
-        [[NSHTTPCookieStorage sharedHTTPCookieStorage] deleteCookie:[existants objectAtIndex:1]];
-        [[NSHTTPCookieStorage sharedHTTPCookieStorage] deleteCookie:[existants objectAtIndex:0]];
+    if ([existants count] >= 2) {
+        for (NSHTTPCookie *cookie in existants) {
+            [[NSHTTPCookieStorage sharedHTTPCookieStorage] deleteCookie:cookie];
+        }
+        /*[[NSHTTPCookieStorage sharedHTTPCookieStorage] deleteCookie:[existants objectAtIndex:1]];
+        [[NSHTTPCookieStorage sharedHTTPCookieStorage] deleteCookie:[existants objectAtIndex:0]];*/
     }
     if ([existants count] == 1) {
         [[NSHTTPCookieStorage sharedHTTPCookieStorage] deleteCookie:[existants objectAtIndex:0]];
     }
-    connecte = NO;
 
-    NSString *fichierDonnees = [[NSSearchPathForDirectoriesInDomains(NSLibraryDirectory, NSUserDomainMask, YES) objectAtIndex:0] stringByAppendingString:@"/parametres.plist"];
+    /*NSString *fichierDonnees = [[NSSearchPathForDirectoriesInDomains(NSLibraryDirectory, NSUserDomainMask, YES) objectAtIndex:0] stringByAppendingString:@"/parametres.plist"];
     NSMutableDictionary *temp = [NSMutableDictionary dictionaryWithContentsOfFile:fichierDonnees];
     [temp setObject:[NSNumber numberWithBool:NO] forKey:@"dejaConnecte"];
-    [temp writeToFile:fichierDonnees atomically:NO];
+    [temp writeToFile:fichierDonnees atomically:NO];*/
+    
+    [[NSUserDefaults standardUserDefaults] setBool:NO forKey:@"dejaConnecte"];
     
     return YES;
 }
@@ -119,20 +137,358 @@
     
     NSString *fichierEdt = [[NSSearchPathForDirectoriesInDomains(NSCachesDirectory, NSUserDomainMask, YES) objectAtIndex:0] stringByAppendingString:[@"/edt/" stringByAppendingString:[[choix componentsSeparatedByString:@"/"] lastObject]]];
     
-    if (reseau && ![[edtTelecharge objectForKey:[[choix componentsSeparatedByString:@"/"] lastObject]] boolValue]) {
+    if (![[edtTelecharge objectForKey:[[choix componentsSeparatedByString:@"/"] lastObject]] boolValue]) {
         NSMutableURLRequest *getRequete = [[NSMutableURLRequest alloc] initWithURL:[NSURL URLWithString:[[[NSBundle mainBundle] objectForInfoDictionaryKey:@"Nom Intranet"] stringByAppendingString:choix]] cachePolicy:NSURLRequestReloadIgnoringCacheData timeoutInterval:10];
         recupEdt = [[NSURLConnection alloc] initWithRequest:getRequete delegate:self];
+    }
+    if ([[NSFileManager defaultManager] fileExistsAtPath:fichierEdt]) {
+        return [NSData dataWithContentsOfFile:fichierEdt];
+    }
+    else return nil;
+    
+}
+
+//################  Vendomes  ################//
+
+-(NSArray *)listeVendomes {
+    
+    NSArray *listeVendomes = nil;
+    NSString *fichierVendome = [[NSSearchPathForDirectoriesInDomains(NSLibraryDirectory, NSUserDomainMask, YES) objectAtIndex:0] stringByAppendingString:@"/vendomes.plist"];
+    if ([[NSFileManager defaultManager] fileExistsAtPath:fichierVendome]) {
+        listeVendomes = [[NSArray alloc] initWithContentsOfFile:fichierVendome];
+    }
+    
+    if (!majListe) {
+        majListe = YES;
+        NSMutableURLRequest *getRequete = [[NSMutableURLRequest alloc] initWithURL:[NSURL URLWithString:[_nomDomaine stringByAppendingString:@"/associations/vendome/archives/json/"]] cachePolicy:NSURLRequestReloadIgnoringCacheData timeoutInterval:10];
+        recupVendome = [[NSURLConnection alloc] initWithRequest:getRequete delegate:self startImmediately:NO];
+        [recupVendome scheduleInRunLoop:[NSRunLoop mainRunLoop]
+                               forMode:NSDefaultRunLoopMode];
+        [recupVendome start];
+    }
+    
+    return listeVendomes;
+}
+
+-(void)listeVendomesAvecTelechargement {
+    NSMutableURLRequest *getRequete = [[NSMutableURLRequest alloc] initWithURL:[NSURL URLWithString:[_nomDomaine stringByAppendingString:@"/associations/vendome/archives/json/"]] cachePolicy:NSURLRequestReloadIgnoringCacheData timeoutInterval:10];
+    recupVendome = [[NSURLConnection alloc] initWithRequest:getRequete delegate:self startImmediately:NO];
+    [recupVendome scheduleInRunLoop:[NSRunLoop mainRunLoop]
+                            forMode:NSDefaultRunLoopMode];
+    [recupVendome start];
+}
+
+-(NSData *)getVendome:(NSString *)urlVendome {
+    
+    
+    NSData *doc = nil;
+    NSString *fichierVendome = [[NSSearchPathForDirectoriesInDomains(NSLibraryDirectory, NSUserDomainMask, YES) objectAtIndex:0] stringByAppendingString:[@"/vendome/" stringByAppendingString:[[urlVendome componentsSeparatedByString:@"/"] lastObject]]];
+    if ([[NSFileManager defaultManager] fileExistsAtPath:fichierVendome]) {
+        doc = [[NSData alloc] initWithContentsOfFile:fichierVendome];
+    }
+    else if (![vendomeEnCours isEqualToString:[[urlVendome componentsSeparatedByString:@"/"] lastObject]]){
+        NSMutableURLRequest *getRequete = [[NSMutableURLRequest alloc] initWithURL:[NSURL URLWithString:[_nomDomaine stringByAppendingString:urlVendome]] cachePolicy:NSURLRequestReloadIgnoringCacheData timeoutInterval:60];
+        recupVendome = [[NSURLConnection alloc] initWithRequest:getRequete delegate:self startImmediately:NO];
+        [recupVendome scheduleInRunLoop:[NSRunLoop mainRunLoop]
+                                forMode:NSDefaultRunLoopMode];
+        [recupVendome start];
+        vendomeEnCours = [[urlVendome componentsSeparatedByString:@"/"] lastObject];
+    }
+    return doc;
+}
+
+//################## Sondage #################//
+
+-(NSArray *)obtenirSondage:(NSDate *)date etPrecedent:(BOOL)precedent {
+    NSString *dossierSondage = [[NSSearchPathForDirectoriesInDomains(NSCachesDirectory, NSUserDomainMask, YES) objectAtIndex:0] stringByAppendingString:@"/sondages/"];
+    
+    NSDictionary *dicoSondage = nil;
+    BOOL telecharge = YES;
+    if ([[NSFileManager defaultManager] fileExistsAtPath:[dossierSondage stringByAppendingString:[formatter stringFromDate:date]]]) {
+        dicoSondage = [NSDictionary dictionaryWithContentsOfFile:[dossierSondage stringByAppendingString:[formatter stringFromDate:date]]];
+        
+        if ([[dicoSondage objectForKey:@"is_premier"] boolValue] && !telechargementSondage) {
+            telechargementSondage = YES;
+        }
+        else {
+            telecharge = NO;
+            telechargementSondage = NO;
+        }
+    }
+    
+    if (telecharge) {
+        telecharge = NO;
+        
+        NSDateComponents *joursDecalage = [[NSCalendar currentCalendar] components:NSDayCalendarUnit fromDate:date toDate:[NSDate date] options:0];
+        
+        NSMutableURLRequest *getRequete = [[NSMutableURLRequest alloc] initWithURL:[NSURL URLWithString:[_nomDomaine stringByAppendingString:[NSString stringWithFormat:@"/sondages/%d/json/",[joursDecalage day]]]]];
+        sondage = [[NSURLConnection alloc] initWithRequest:getRequete delegate:self startImmediately:NO];
+        [sondage scheduleInRunLoop:[NSRunLoop mainRunLoop]
+                           forMode:NSDefaultRunLoopMode];
+        [sondage start];
+        
+        NSArray *fichiers = [[NSFileManager defaultManager] contentsOfDirectoryAtPath:dossierSondage error:NULL];
+        if (fichiers && [fichiers count]) {
+            int index = [fichiers indexOfObjectPassingTest:^BOOL(id obj,NSUInteger ind, BOOL *stop){
+                if ([(NSString *)[[(NSString *)obj componentsSeparatedByString:@"/"] lastObject] compare:[formatter stringFromDate:date]] == NSOrderedDescending) {
+                    BOOL stopp = YES;
+                    stop = &stopp;
+                    return YES;
+                }
+                return NO;
+            }];
+            if (precedent && index > 0)
+                index--;
+            if (index > [fichiers count])
+                index = [fichiers count]-1;
+            
+            if (![[fichiers objectAtIndex:index] isEqualToString:@".DS_STORE"]) {
+                dicoSondage = [NSDictionary dictionaryWithContentsOfFile:[dossierSondage stringByAppendingString:[fichiers objectAtIndex:index]]];
+                date = [formatter dateFromString:[fichiers objectAtIndex:index]];
+            }
+        }
+    }
+    NSArray *tab = [NSArray arrayWithObjects:dicoSondage, date, nil];
+    
+    return tab;
+}
+
+-(void)voteSondage:(NSInteger)choix {
+    NSMutableURLRequest *getRequete = [[NSMutableURLRequest alloc] initWithURL:[NSURL URLWithString:[_nomDomaine stringByAppendingString:@"/sondages/voter/"]]];
+    [getRequete setHTTPMethod:@"POST"];
+    
+    NSMutableString *chaine = [[NSMutableString alloc] init];
+    NSArray *existants = [[NSHTTPCookieStorage sharedHTTPCookieStorage] cookiesForURL:[NSURL URLWithString:_nomDomaine]];
+    [chaine appendString:@"csrfmiddlewaretoken="];
+    [chaine appendString:[(NSHTTPCookie *)[existants objectAtIndex:1] value]];
+    [chaine appendString:@"&sessionid="];
+    [chaine appendString:[(NSHTTPCookie *)[existants objectAtIndex:0] value]];
+    [chaine appendString:@"&choix="];
+    [chaine appendString:[NSString stringWithFormat:@"%d",choix]];
+    [chaine appendString:@"&next="];
+    [chaine appendString:@"/sondages/0/json/"];
+    
+    [getRequete setHTTPBody:[chaine dataUsingEncoding:NSUTF8StringEncoding]];
+    
+    sondage = [[NSURLConnection alloc] initWithRequest:getRequete delegate:self];
+}
+
+//############### Petits Cours ###############//
+-(NSArray *)getPetitsCours {
+    if (!petitsCours) {
+        NSMutableURLRequest *getRequete = [[NSMutableURLRequest alloc] initWithURL:[NSURL URLWithString:[_nomDomaine stringByAppendingString:@"/petitscours/json/"]] cachePolicy:NSURLRequestReloadIgnoringLocalCacheData timeoutInterval:10];
+        recupPC = [[NSURLConnection alloc] initWithRequest:getRequete delegate:self startImmediately:NO];
+        [recupPC scheduleInRunLoop:[NSRunLoop mainRunLoop]
+                       forMode:NSDefaultRunLoopMode];
+        [recupPC start];
         return nil;
     }
     else {
-        if ([[NSFileManager defaultManager] fileExistsAtPath:fichierEdt]) {
-            return [NSData dataWithContentsOfFile:fichierEdt];
-        }
-        else return nil;
+        return petitsCours;
     }
 }
 
-//################## Trombi ##################//
+-(void)demanderPC:(int)i {
+    NSMutableURLRequest *getRequete = [[NSMutableURLRequest alloc] initWithURL:[NSURL URLWithString:[_nomDomaine stringByAppendingString:[NSString stringWithFormat:@"/petitscours/request/%d",i]]] cachePolicy:NSURLRequestReloadIgnoringLocalCacheData timeoutInterval:10];
+    recupPC = [[NSURLConnection alloc] initWithRequest:getRequete delegate:self startImmediately:NO];
+    [recupPC scheduleInRunLoop:[NSRunLoop mainRunLoop]
+                       forMode:NSDefaultRunLoopMode];
+    [recupPC start];
+}
+
+//################# Calendrier ################//
+
+-(NSArray *)getCalendrier {
+    NSString *fichierCalendrier = [[NSSearchPathForDirectoriesInDomains(NSCachesDirectory, NSUserDomainMask, YES) objectAtIndex:0] stringByAppendingString:@"/calendrier.plist"];
+    NSArray *calendier;
+    if ([[NSFileManager defaultManager] fileExistsAtPath:fichierCalendrier]) {
+        calendier = [[NSArray alloc] initWithContentsOfFile:fichierCalendrier];
+    }
+    if (!majCalendrier) {
+        majCalendrier = YES;
+        NSMutableURLRequest *getRequete = [[NSMutableURLRequest alloc] initWithURL:[NSURL URLWithString:[_nomDomaine stringByAppendingString:@"/calendrier/json/"]]];
+        
+        recupCalendrier = [[NSURLConnection alloc] initWithRequest:getRequete delegate:self startImmediately:NO];
+        [recupCalendrier scheduleInRunLoop:[NSRunLoop mainRunLoop]
+                       forMode:NSDefaultRunLoopMode];
+        [recupCalendrier start];
+    }
+    else {
+        majCalendrier = NO;
+    }
+    
+    return calendier;
+}
+
+// ################# Photo asso ################ //
+
+-(UIImage *)getPhotoAsso:(NSString *)asso {
+    if (photoAssos && [photoAssos objectForKey:asso]) {
+        return [photoAssos objectForKey:asso];
+    }
+    
+    else {
+        if (!photoAssos) {
+            photoAssos = [[NSMutableDictionary alloc] init];
+        }
+        
+        UIImage *image;
+        NSString *fichierPhoto = [[NSSearchPathForDirectoriesInDomains(NSLibraryDirectory, NSUserDomainMask, YES) objectAtIndex:0] stringByAppendingString:[NSString stringWithFormat:@"/photos-assoces/%@.png",asso]];
+        
+        if ([[NSFileManager defaultManager] fileExistsAtPath:fichierPhoto]) {
+            image = [UIImage imageWithContentsOfFile:fichierPhoto];
+            if (!image) {
+                [[NSFileManager defaultManager] removeItemAtPath:fichierPhoto error:nil];
+            }
+            else {
+                [photoAssos setObject:image forKey:asso];
+            }
+        }
+        NSMutableURLRequest *getRequete = [[NSMutableURLRequest alloc] initWithURL:[NSURL URLWithString:[_nomDomaine stringByAppendingString:[NSString stringWithFormat:@"/static/logo_%@.png",asso]]] cachePolicy:NSURLRequestUseProtocolCachePolicy timeoutInterval:10];
+        recupPhotoAsso = [[NSURLConnection alloc] initWithRequest:getRequete delegate:self startImmediately:NO];
+        [recupPhotoAsso scheduleInRunLoop:[NSRunLoop mainRunLoop]
+                           forMode:NSDefaultRunLoopMode];
+        [recupPhotoAsso start];
+        return image;
+    }
+}
+
+// ################# Messages ################# //
+
+-(NSArray *)getMessageAvecTous:(BOOL)tous {
+    return [self getMessageAvecTous:tous etTelechargement:NO];
+}
+
+-(NSArray *)getMessageAvecTous:(BOOL)tous etTelechargement:(BOOL)telechargement {
+    
+    if (!tous) {
+        if (!message) {
+            NSString *fichierMessage = [[NSSearchPathForDirectoriesInDomains(NSCachesDirectory, NSUserDomainMask, YES) objectAtIndex:0] stringByAppendingString:@"/messages.plist"];
+            if ([[NSFileManager defaultManager] fileExistsAtPath:fichierMessage]) {
+                message = [[NSArray alloc] initWithContentsOfFile:fichierMessage];
+            }
+            
+            NSMutableURLRequest *getRequete = [[NSMutableURLRequest alloc] initWithURL:[NSURL URLWithString:[_nomDomaine stringByAppendingString:@"/messages/json/"]] cachePolicy:NSURLRequestReloadIgnoringCacheData timeoutInterval:5];
+            recupMessage = [[NSURLConnection alloc] initWithRequest:getRequete delegate:self];
+        }
+        else if (telechargement) {
+            NSMutableURLRequest *getRequete = [[NSMutableURLRequest alloc] initWithURL:[NSURL URLWithString:[_nomDomaine stringByAppendingString:@"/messages/json/"]] cachePolicy:NSURLRequestReloadIgnoringCacheData timeoutInterval:5];
+            recupMessage = [[NSURLConnection alloc] initWithRequest:getRequete delegate:self];
+        }
+        
+        return message;
+    }
+    else {
+        if (!tousMessages) {
+            NSString *fichierMessage = [[NSSearchPathForDirectoriesInDomains(NSCachesDirectory, NSUserDomainMask, YES) objectAtIndex:0] stringByAppendingString:@"/tous-messages.plist"];
+            if ([[NSFileManager defaultManager] fileExistsAtPath:fichierMessage]) {
+                tousMessages = [[NSArray alloc] initWithContentsOfFile:fichierMessage];
+            }
+            
+            NSMutableURLRequest *getRequete = [[NSMutableURLRequest alloc] initWithURL:[NSURL URLWithString:[_nomDomaine stringByAppendingString:@"/messages/tous/json/"]] cachePolicy:NSURLRequestReloadIgnoringCacheData timeoutInterval:5];
+            recupMessage = [[NSURLConnection alloc] initWithRequest:getRequete delegate:self];
+        }
+        else if (telechargement) {
+            NSMutableURLRequest *getRequete = [[NSMutableURLRequest alloc] initWithURL:[NSURL URLWithString:[_nomDomaine stringByAppendingString:@"/messages/tous/json/"]] cachePolicy:NSURLRequestReloadIgnoringCacheData timeoutInterval:5];
+            recupMessage = [[NSURLConnection alloc] initWithRequest:getRequete delegate:self];
+        }
+        
+        return tousMessages;
+    }
+}
+
+-(BOOL)ecrireMessage:(NSArray *)messagesModifies avecTous:(BOOL)tous {
+    NSString *fichierMessage;
+    if (tous) {
+        fichierMessage = [[NSSearchPathForDirectoriesInDomains(NSCachesDirectory, NSUserDomainMask, YES) objectAtIndex:0] stringByAppendingString:@"/messages.plist"];
+    }
+    else {
+        fichierMessage = [[NSSearchPathForDirectoriesInDomains(NSCachesDirectory, NSUserDomainMask, YES) objectAtIndex:0] stringByAppendingString:@"/tous-messages.plist"];
+    }
+    return [messagesModifies writeToFile:fichierMessage atomically:NO];
+}
+
+-(void)setFavori:(BOOL)favori pourMessage:(int)identifiant {
+    NSString *nom = [_nomDomaine stringByAppendingString:[NSString stringWithFormat:@"/messages/%d/",identifiant]];
+    if (favori) {
+        nom = [nom stringByAppendingString:@"classer_important/"];
+    }
+    else {
+        nom = [nom stringByAppendingString:@"classer_non_important/"];
+    }
+    
+    NSMutableURLRequest *getRequete = [[NSMutableURLRequest alloc] initWithURL:[NSURL URLWithString:nom]];
+    [getRequete setHTTPMethod:@"POST"];
+    NSMutableString *chaine = [[NSMutableString alloc] init];
+    NSArray *existants = [[NSHTTPCookieStorage sharedHTTPCookieStorage] cookiesForURL:[NSURL URLWithString:_nomDomaine]];
+    [chaine appendString:@"csrfmiddlewaretoken="];
+    [chaine appendString:[(NSHTTPCookie *)[existants objectAtIndex:1] value]];
+    [chaine appendString:@"&sessionid="];
+    [chaine appendString:[(NSHTTPCookie *)[existants objectAtIndex:0] value]];
+    
+    [getRequete setHTTPBody:[chaine dataUsingEncoding:NSUTF8StringEncoding]];
+    classementMessageFavori = [[NSURLConnection alloc] initWithRequest:getRequete delegate:self];
+}
+
+-(void)setLu:(BOOL)lu pourMessage:(int)identifiant {
+    NSString *nom = [_nomDomaine stringByAppendingString:[NSString stringWithFormat:@"/messages/%d/",identifiant]];
+    if (lu) {
+        nom = [nom stringByAppendingString:@"lire/"];
+    }
+    else {
+        nom = [nom stringByAppendingString:@"classer_non_lu/"];
+    }
+    
+    NSMutableURLRequest *getRequete = [[NSMutableURLRequest alloc] initWithURL:[NSURL URLWithString:nom]];
+    [getRequete setHTTPMethod:@"POST"];
+    NSMutableString *chaine = [[NSMutableString alloc] init];
+    NSArray *existants = [[NSHTTPCookieStorage sharedHTTPCookieStorage] cookiesForURL:[NSURL URLWithString:_nomDomaine]];
+    [chaine appendString:@"csrfmiddlewaretoken="];
+    [chaine appendString:[(NSHTTPCookie *)[existants objectAtIndex:1] value]];
+    [chaine appendString:@"&sessionid="];
+    [chaine appendString:[(NSHTTPCookie *)[existants objectAtIndex:0] value]];
+    
+    [getRequete setHTTPBody:[chaine dataUsingEncoding:NSUTF8StringEncoding]];
+    
+    classementMessageLu = [[NSURLConnection alloc] initWithRequest:getRequete delegate:self];
+}
+
+// ################### Chat ################### //
+
+-(NSDictionary *)getChat {
+    /*if (!self.messagesChat) {
+        NSString *fichierChat = [[NSSearchPathForDirectoriesInDomains(NSCachesDirectory, NSUserDomainMask, YES) objectAtIndex:0] stringByAppendingString:@"/chat.plist"];
+        if ([[NSFileManager defaultManager] fileExistsAtPath:fichierChat]) {
+            self.messagesChat = [[NSDictionary alloc] initWithContentsOfFile:fichierChat];
+        }
+    }*/
+    
+    NSMutableURLRequest *getRequete = [[NSMutableURLRequest alloc] initWithURL:[NSURL URLWithString:[NSString stringWithFormat:[_nomDomaine stringByAppendingString:@"/chat/room/2/ajax/?time=%ld"],(long)tempsChat]] cachePolicy:NSURLRequestReloadIgnoringCacheData timeoutInterval:10];
+    
+    recupChat = [[NSURLConnection alloc] initWithRequest:getRequete delegate:self];
+    return self.messagesChat;
+}
+
+-(void)postChat:(NSString *)messagePost {
+    NSMutableURLRequest *getRequete = [[NSMutableURLRequest alloc] initWithURL:[NSURL URLWithString:[_nomDomaine stringByAppendingString:@"/chat/room/2/ajax/"]]];
+    [getRequete setHTTPMethod:@"POST"];
+    
+    NSMutableString *chaine = [[NSMutableString alloc] init];
+    NSArray *existants = [[NSHTTPCookieStorage sharedHTTPCookieStorage] cookiesForURL:[NSURL URLWithString:_nomDomaine]];
+    [getRequete setValue:[(NSHTTPCookie *)[existants objectAtIndex:1] value] forHTTPHeaderField:@"X-CSRFToken"];
+    [chaine appendString:@"time="];
+    [chaine appendString:[NSString stringWithFormat:@"%ld",(long)tempsChat]];
+    [chaine appendString:@"&action="];
+    [chaine appendString:@"postmsg"];
+    [chaine appendString:@"&message="];
+    [chaine appendString:messagePost];
+    
+    [getRequete setHTTPBody:[chaine dataUsingEncoding:NSUTF8StringEncoding]];
+    
+    postChat = [[NSURLConnection alloc] initWithRequest:getRequete delegate:self];
+}
+
+// ################## Trombi ################## //
 // Renvoie le trombi (ou nil s'il n'existe pas. Il faut donc penser à faire le teste. En cas d'attente (première connexion), il faut attendre la notification @"trombi" avant de charger à nouveau.
 -(NSArray *)getTrombi {
     if (!trombi) {
@@ -150,24 +506,6 @@
         }
     }
     return trombi;
-}
-
--(NSArray *)getMessage {
-    [[NSNotificationCenter defaultCenter] removeObserver:self name:@"Ok" object:nil];
-    if (!message) {
-        if (reseau) {
-            NSMutableURLRequest *getRequete = [[NSMutableURLRequest alloc] initWithURL:[NSURL URLWithString:[_nomDomaine stringByAppendingString:@"/messages/json/"]] cachePolicy:NSURLRequestReloadIgnoringCacheData timeoutInterval:5];
-            //[getRequete setAllHTTPHeaderFields:[NSHTTPCookie requestHeaderFieldsWithCookies:[[NSHTTPCookieStorage sharedHTTPCookieStorage] cookiesForURL:[NSURL URLWithString:_nomDomaine]]]];
-            recupMessage = [[NSURLConnection alloc] initWithRequest:getRequete delegate:self];
-        }
-        else {
-            NSString *fichierMessage = [[NSSearchPathForDirectoriesInDomains(NSCachesDirectory, NSUserDomainMask, YES) objectAtIndex:0] stringByAppendingString:@"/message.data"];
-            if ([[NSFileManager defaultManager] fileExistsAtPath:fichierMessage]) {
-                message = [[NSArray alloc] initWithContentsOfFile:fichierMessage];
-            }
-        }
-    }
-    return message;
 }
 
 -(UIImage *)getImage:(NSString *)identifiant etTelechargement:(BOOL)telechargement {
@@ -199,6 +537,7 @@
         else {
             FluxTelechargement *objet = [[FluxTelechargement alloc] initWithDomaine:_nomDomaine etUsername:identifiant withParent:self etPhoto:YES];
             [telechargements addObject:objet];
+            objet = nil;
             return nil;
         }
     }
@@ -222,7 +561,7 @@
     }
 }
 
--(void)chercheImage:(NSString *)username pourImage:(BOOL)imageOuMessage {
+-(void)chercheImageOuMessage:(BOOL)imageOuMessage pourUsername:(NSString *)username; {
         FluxTelechargement *objet = [[FluxTelechargement alloc] initWithDomaine:_nomDomaine etUsername:username withParent:self etPhoto:imageOuMessage];
         [objet startDownload];
 }
@@ -256,6 +595,7 @@
         else {
             FluxTelechargement *objet = [[FluxTelechargement alloc] initWithDomaine:_nomDomaine etUsername:identifiant withParent:self etPhoto:NO];
             [telechargements addObject:objet];
+            objet = nil;
             return nil;
         }
     }
@@ -263,7 +603,7 @@
 }
 
 -(void)renvoieImage:(UIImage *)image forUsername:(NSString *)personne {
-    if ([telechargements count]) {
+    if ([telechargements count] && !enPause) {
         [[telechargements objectAtIndex:0] startDownload];
         [telechargements removeObjectAtIndex:0];
     }
@@ -280,7 +620,7 @@
 }
 
 -(void)renvoieInfos:(NSDictionary *)dico forUsername:(NSString *)personne {
-    if ([telechargements count]) {
+    if ([telechargements count] && !enPause) {
         [[telechargements objectAtIndex:0] startDownload];
         [telechargements removeObjectAtIndex:0];
     }
@@ -311,7 +651,15 @@
             [telechargements removeObjectAtIndex:0];
         }
     }
+    [self listeVendomes];
     //[self obtentionEdts];
+}
+
+//############## Réidentification ############//
+-(void)identification {
+    KeychainItemWrapper *key = [[KeychainItemWrapper alloc] initWithIdentifier:@"Identification" accessGroup:nil];
+    [self identification:[key objectForKey:(__bridge id)kSecAttrAccount] andPassword:[key objectForKey:(__bridge id)kSecValueData]];
+    key = nil;
 }
 
 //################## Délégué #################//
@@ -322,22 +670,87 @@
         reseau = NO;
         [[NSNotificationCenter defaultCenter] postNotificationName:@"connectionDispo" object:nil];
         NSLog(@"Erreur réseau");
+        testReseau = nil;
     }
     else if (connection == recupToken) {
         if (reseau) {
             [[NSNotificationCenter defaultCenter] postNotificationName:@"NoCookie" object:nil];
             NSLog(@"Echec site");
+            recupToken = nil;
         }
     }
     else if (connection == recupTrombi) {
         NSLog(@"Erreur chargement trombi");
+        recupTrombi = nil;
     }
     
     else if (connection == recupEdt) {
         NSLog(@"Echec téléchargement Edt");
         NSString *edt = [[[[[connection currentRequest] URL] absoluteString] componentsSeparatedByString:@"/"] lastObject];
-        [[NSNotificationCenter defaultCenter] postNotificationName:@"edtTelecharge" object:nil userInfo:[NSDictionary dictionaryWithObjects:[NSArray arrayWithObjects:NO,edt, nil] forKeys:[NSArray arrayWithObjects:@"succes",@"nom", nil]]];
+        [[NSNotificationCenter defaultCenter] postNotificationName:@"edtTelecharge" object:nil userInfo:[NSDictionary dictionaryWithObjects:[NSArray arrayWithObjects:[NSNumber numberWithBool:NO],edt, nil] forKeys:[NSArray arrayWithObjects:@"succes",@"nom", nil]]];
+        recupEdt = nil;
     }
+    
+    else if (connection == recupVendome) {
+        NSString *finURL = [[[[[connection currentRequest] URL] absoluteString] componentsSeparatedByString:@"/"] lastObject];
+        
+        if ([finURL isEqualToString:@""]) {
+            [[NSNotificationCenter defaultCenter] postNotificationName:@"vendomeTelecharge" object:nil userInfo:[NSDictionary dictionaryWithObjects:[NSArray arrayWithObjects:[NSNumber numberWithBool:NO],@"liste", nil] forKeys:[NSArray arrayWithObjects:@"succes",@"nom", nil]]];
+        }
+        else {
+            [[NSNotificationCenter defaultCenter] postNotificationName:@"vendomeTelecharge" object:nil userInfo:[NSDictionary dictionaryWithObjects:[NSArray arrayWithObjects:[NSNumber numberWithBool:NO],finURL, nil] forKeys:[NSArray arrayWithObjects:@"succes",@"nom", nil]]];
+            vendomeEnCours = @"";
+        }
+        donneesVendome = nil;
+        recupVendome = nil;
+    }
+    
+    else if (connection == sondage) {
+        NSArray *morceaux = [[[[connection currentRequest] URL] absoluteString] componentsSeparatedByString:@"/"];
+        
+        if ([[morceaux objectAtIndex:[morceaux count]-2] isEqualToString:@"json"]) {
+            int i = [[morceaux objectAtIndex:[morceaux count]-3] intValue];
+            [decalage setDay:-i];
+            NSDate *date = [[NSCalendar currentCalendar] dateByAddingComponents:decalage toDate:[NSDate date] options:0];
+            [[NSNotificationCenter defaultCenter] postNotificationName:@"sondageTelecharge" object:nil userInfo:[NSDictionary dictionaryWithObjects:[NSArray arrayWithObjects:[NSNumber numberWithBool:NO],date, nil] forKeys:[NSArray arrayWithObjects:@"succes",@"date", nil]]];
+        }
+        
+        else {
+            [[NSNotificationCenter defaultCenter] postNotificationName:@"voteSondage" object:nil userInfo:[NSDictionary dictionaryWithObjects:[NSArray arrayWithObjects:[NSNumber numberWithBool:NO], nil] forKeys:[NSArray arrayWithObjects:@"succes", nil]]];
+        }
+        sondage = nil;
+    }
+    
+    else if (connection == recupPC) {
+        if ([[[[[[connection currentRequest] URL] absoluteString] componentsSeparatedByString:@"/"] lastObject] isEqualToString:@""])
+            [[NSNotificationCenter defaultCenter] postNotificationName:@"pcTelecharge" object:nil userInfo:[NSDictionary dictionaryWithObjects:[NSArray arrayWithObjects:[NSNumber numberWithBool:NO], nil] forKeys:[NSArray arrayWithObjects:@"succes", nil]]];
+        else
+            [[NSNotificationCenter defaultCenter] postNotificationName:@"demandePC" object:nil userInfo:[NSDictionary dictionaryWithObjects:[NSArray arrayWithObjects:[NSNumber numberWithBool:NO], nil] forKeys:[NSArray arrayWithObjects:@"succes", nil]]];
+        recupPC = nil;
+    }
+    
+    else if (connection == recupCalendrier) {
+        [[NSNotificationCenter defaultCenter] postNotificationName:@"calendrierTelecharge" object:nil userInfo:[NSDictionary dictionaryWithObjects:[NSArray arrayWithObjects:[NSNumber numberWithBool:NO], nil] forKeys:[NSArray arrayWithObjects:@"succes", nil]]];
+        recupCalendrier = nil;
+    }
+    
+    else if (connection == classementMessageLu) {
+        [[NSNotificationCenter defaultCenter] postNotificationName:@"ClassementMessage" object:nil userInfo:[NSDictionary dictionaryWithObjects:[NSArray arrayWithObjects:[NSNumber numberWithBool:NO],[NSNumber numberWithBool:YES], nil] forKeys:[NSArray arrayWithObjects:@"Succes",@"Lu", nil] ]];
+    }
+    
+    else if (connection == classementMessageFavori) {
+        [[NSNotificationCenter defaultCenter] postNotificationName:@"ClassementMessage" object:nil userInfo:[NSDictionary dictionaryWithObjects:[NSArray arrayWithObjects:[NSNumber numberWithBool:NO],[NSNumber numberWithBool:NO], nil] forKeys:[NSArray arrayWithObjects:@"Succes",@"Lu", nil] ]];
+    }
+    
+    else if (connection == recupChat) {
+        [[NSNotificationCenter defaultCenter] postNotificationName:@"MajChat" object:nil userInfo:[NSDictionary dictionaryWithObject:[NSNumber numberWithBool:NO] forKey:@"succes"]];
+    }
+    
+    else if (connection == postChat) {
+        [[NSNotificationCenter defaultCenter] postNotificationName:@"EnvoieValide" object:nil userInfo:[NSDictionary dictionaryWithObject:[NSNumber numberWithBool:NO] forKey:@"succes"]];
+    }
+    
+    donneesRecues = nil;
 }
 
 -(void)connection:(NSURLConnection *)connection didReceiveAuthenticationChallenge:(NSURLAuthenticationChallenge *)challenge {
@@ -351,8 +764,9 @@
         reseau = YES;
         [[NSNotificationCenter defaultCenter] postNotificationName:@"connectionDispo" object:nil];
         [connection cancel];
+        testReseau = nil;
     }
-    else if (connection == recupTrombi || connection == recupMessage) {
+    else if (connection == recupTrombi || connection == recupMessage || connection == sondage || connection == recupPC || connection == recupCalendrier || connection == recupPhotoAsso || connection == recupChat || connection == postChat) {
         [donneesRecues appendData:data];
     }
     else if (connection == recupEdt) {
@@ -360,13 +774,17 @@
         float progres = [donneesRecues length]/(float)tailleTelechargement;
         [[NSNotificationCenter defaultCenter] postNotificationName:@"progresTelechargement" object:nil userInfo:[NSDictionary dictionaryWithObject:[NSNumber numberWithFloat:progres] forKey:@"progres"]];
     }
+    else if (connection == recupVendome) {
+        [donneesVendome appendData:data];
+        float progres = [donneesVendome length]/(float)tailleTelechargement;
+        [[NSNotificationCenter defaultCenter] postNotificationName:@"progresTelechargement" object:nil userInfo:[NSDictionary dictionaryWithObject:[NSNumber numberWithFloat:progres] forKey:@"progres"]];
+    }
 }
 
 -(void)connection:(NSURLConnection *)connection didReceiveResponse:(NSURLResponse *)response {
-    
     if (connection == recupToken) {
         NSDictionary *cookies = [(NSHTTPURLResponse *)response allHeaderFields];
-    
+        
         if ([[NSHTTPCookie cookiesWithResponseHeaderFields:cookies forURL:[NSURL URLWithString:_nomDomaine]] count] != 0) {
             NSHTTPCookie *cookie = [[NSHTTPCookie cookiesWithResponseHeaderFields:cookies forURL:[NSURL URLWithString:_nomDomaine]] objectAtIndex:0];
             [[NSHTTPCookieStorage sharedHTTPCookieStorage] setCookie:cookie];
@@ -380,35 +798,63 @@
         if ([(NSHTTPURLResponse *)response statusCode] == 200) {
             [[NSNotificationCenter defaultCenter] postNotification:[NSNotification notificationWithName:@"Non" object:nil]];
             NSLog(@"Echec identification");
+            [connection cancel];
+            ident = nil;
         }
     }
     
-    else if (connection == recupTrombi || connection == recupMessage) {
+    else if (connection == recupTrombi || connection == recupMessage || connection == sondage || connection == recupPC || connection == recupCalendrier || connection == recupPhotoAsso || connection == recupChat || connection == postChat) {
         donneesRecues = [[NSMutableData alloc] initWithLength:0];
     }
     else if (connection == recupEdt) {
         donneesRecues = [[NSMutableData alloc] initWithLength:0];
         tailleTelechargement = [response expectedContentLength];
     }
+    else if (connection == recupVendome) {
+        donneesVendome = [[NSMutableData alloc] initWithLength:0];
+        tailleTelechargement = [response expectedContentLength];
+    }
+    
+    else if (connection == classementMessageLu) {
+        NSArray *morceaux = [[[[connection currentRequest] URL] absoluteString] componentsSeparatedByString:@"/"];
+        if ([(NSHTTPURLResponse *)response statusCode] == 200) {
+            [[NSNotificationCenter defaultCenter] postNotificationName:@"ClassementMessage" object:nil userInfo:[NSDictionary dictionaryWithObjects:[NSArray arrayWithObjects:[NSNumber numberWithBool:YES],[NSNumber numberWithBool:YES],[NSNumber numberWithInt:[[morceaux objectAtIndex:[morceaux count]-3] intValue]], nil] forKeys:[NSArray arrayWithObjects:@"Succes",@"Lu",@"Id", nil] ]];
+        }
+        else {
+            [[NSNotificationCenter defaultCenter] postNotificationName:@"ClassementMessage" object:nil userInfo:[NSDictionary dictionaryWithObjects:[NSArray arrayWithObjects:[NSNumber numberWithBool:NO],[NSNumber numberWithBool:YES], nil] forKeys:[NSArray arrayWithObjects:@"Succes",@"Lu", nil] ]];
+        }
+        [connection cancel];
+    }
+    
+    else if (connection == classementMessageFavori) {
+        NSArray *morceaux = [[[[connection currentRequest] URL] absoluteString] componentsSeparatedByString:@"/"];
+        if ([(NSHTTPURLResponse *)response statusCode] == 200) {
+            [[NSNotificationCenter defaultCenter] postNotificationName:@"ClassementMessage" object:nil userInfo:[NSDictionary dictionaryWithObjects:[NSArray arrayWithObjects:[NSNumber numberWithBool:YES],[NSNumber numberWithBool:NO],[NSNumber numberWithInt:[[morceaux objectAtIndex:[morceaux count]-3] intValue]], nil] forKeys:[NSArray arrayWithObjects:@"Succes",@"Lu",@"Id", nil] ]];
+        }
+        else {
+            [[NSNotificationCenter defaultCenter] postNotificationName:@"ClassementMessage" object:nil userInfo:[NSDictionary dictionaryWithObjects:[NSArray arrayWithObjects:[NSNumber numberWithBool:NO],[NSNumber numberWithBool:NO], nil] forKeys:[NSArray arrayWithObjects:@"Succes",@"Lu", nil] ]];
+        }
+        [connection cancel];
+    }
 }
 
 -(NSURLRequest *)connection:(NSURLConnection *)connection willSendRequest:(NSURLRequest *)request redirectResponse:(NSURLResponse *)response {
     if (connection == ident) {
         if ([(NSHTTPURLResponse *)response statusCode] == 302) {
+            
             NSLog(@"Succès");
             [connection cancel];
-            connecte = YES;
+            ident = nil;
             
             NSDictionary *cookies = [(NSHTTPURLResponse *)response allHeaderFields];
             NSHTTPCookie *cookie = [[NSHTTPCookie cookiesWithResponseHeaderFields:cookies forURL:[NSURL URLWithString:_nomDomaine]] objectAtIndex:0];
             [[NSHTTPCookieStorage sharedHTTPCookieStorage] setCookie:cookie];
             
             [[NSNotificationCenter defaultCenter] postNotification:[NSNotification notificationWithName:@"Ok" object:nil]];
+            [self getMessageAvecTous:NO];
             
-            NSString *fichierDonnees = [[NSSearchPathForDirectoriesInDomains(NSLibraryDirectory, NSUserDomainMask, YES) objectAtIndex:0] stringByAppendingString:@"/parametres.plist"];
-            NSMutableDictionary *temp = [NSMutableDictionary dictionaryWithContentsOfFile:fichierDonnees];
-            [temp setObject:[NSNumber numberWithBool:YES] forKey:@"dejaConnecte"];
-            [temp writeToFile:fichierDonnees atomically:NO];
+            [[NSUserDefaults standardUserDefaults] setBool:YES forKey:@"dejaConnecte"];
+            [[NSUserDefaults standardUserDefaults] synchronize];
             
             return nil;
         }
@@ -426,44 +872,67 @@
 }
 
 -(void)connectionDidFinishLoading:(NSURLConnection *)connection {
-    if (connection == recupTrombi) {
+    if (connection == recupTrombi && donneesRecues) {
         NSError *error;
         NSMutableArray *trombiTemp = [NSJSONSerialization JSONObjectWithData:donneesRecues options:NSJSONReadingMutableContainers error:&error];
         NSLog(@"Trombi téléchargé");
+        if (!trombiTemp) {
+            [self identification];
+            return;
+        }
         [trombiTemp sortUsingDescriptors:[NSArray arrayWithObjects:[NSSortDescriptor sortDescriptorWithKey:@"last_name" ascending:YES],[NSSortDescriptor sortDescriptorWithKey:@"first_name" ascending:YES], nil]];
+        NSPredicate *predicate  = [NSPredicate predicateWithFormat:@"(promo != NULL) && (promo != nil)"];
+        [trombiTemp filterUsingPredicate:predicate];
         
         NSString *fichierTrombi = [[NSSearchPathForDirectoriesInDomains(NSCachesDirectory, NSUserDomainMask, YES) objectAtIndex:0] stringByAppendingString:@"/trombi.data"];
         trombi = [trombiTemp copy];
-        //[self recupTout];
+        [trombi writeToFile:fichierTrombi atomically:YES];
         [self performSelectorInBackground:@selector(recupTout) withObject:nil];
+        
         
         [[NSNotificationCenter defaultCenter] postNotificationName:@"tTelecharge" object:nil];
         
-        [trombi writeToFile:fichierTrombi atomically:NO];
+        donneesRecues = nil;
+        recupTrombi = nil;
     }
     
-    else if (connection == recupMessage) {
+    else if (connection == recupMessage && donneesRecues) {
+        NSArray *morceaux = [[[[connection currentRequest] URL] absoluteString] componentsSeparatedByString:@"/"];
+        
         NSError *error;
-        message = [NSJSONSerialization JSONObjectWithData:donneesRecues options:NSJSONReadingAllowFragments error:&error];
-        if (error) {
+        NSArray *result = [NSJSONSerialization JSONObjectWithData:donneesRecues options:NSJSONReadingAllowFragments error:&error];
+        if (!result) {
             NSLog(@"Erreur lors du parsage");
-            
+                        
             if (!tentative) {
                 tentative = YES;
-                KeychainItemWrapper *key = [[KeychainItemWrapper alloc] initWithIdentifier:@"Identification" accessGroup:nil];
-                [self identification:[key objectForKey:(__bridge id)kSecAttrAccount] andPassword:[key objectForKey:(__bridge id)kSecValueData]];
-                [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(getMessage) name:@"Ok" object:nil];
+                [self identification];
+            }
+            else {
+                [[NSNotificationCenter defaultCenter] postNotificationName:@"mTelecharge" object:nil userInfo:[NSDictionary dictionaryWithObject:[NSNumber numberWithBool:NO] forKey:@"succes"]];
             }
         }
-        if (message) {
-            NSString *fichierMessage = [[NSSearchPathForDirectoriesInDomains(NSCachesDirectory, NSUserDomainMask, YES) objectAtIndex:0] stringByAppendingString:@"/message.data"];
-            [message writeToFile:fichierMessage atomically:NO];
+        else {
+            BOOL tous = YES;
+            NSString *fichierMessage;
+            if ([[morceaux objectAtIndex:[morceaux count]-3] isEqualToString:@"tous"]) {
+                tousMessages = result;
+                fichierMessage = [[NSSearchPathForDirectoriesInDomains(NSCachesDirectory, NSUserDomainMask, YES) objectAtIndex:0] stringByAppendingString:@"/tous-messages.plist"];
+            }
+            else {
+                tous = NO;
+                message =   result;
+                fichierMessage = [[NSSearchPathForDirectoriesInDomains(NSCachesDirectory, NSUserDomainMask, YES) objectAtIndex:0] stringByAppendingString:@"/messages.plist"];
+            }
+            [result writeToFile:fichierMessage atomically:NO];
             NSLog(@"Messages téléchargés");
-            [[NSNotificationCenter defaultCenter] postNotificationName:@"mTelecharge" object:nil];
+            [[NSNotificationCenter defaultCenter] postNotificationName:@"mTelecharge" object:nil userInfo:[NSDictionary dictionaryWithObjects:[NSArray arrayWithObjects:[NSNumber numberWithBool:YES],[NSNumber numberWithBool:tous],nil] forKeys:[NSArray arrayWithObjects:@"succes",@"choix",nil]]];
         }
+        donneesRecues = nil;
+        recupMessage = nil;
     }
     
-    else if (connection == recupEdt) {
+    else if (connection == recupEdt && donneesRecues) {
         NSData *donneesPdf = donneesRecues;
         NSString *edt = [[[[[connection currentRequest] URL] absoluteString] componentsSeparatedByString:@"/"] lastObject];
         NSString *fichierImage = [[NSSearchPathForDirectoriesInDomains(NSCachesDirectory, NSUserDomainMask, YES) objectAtIndex:0] stringByAppendingString:[@"/edt/" stringByAppendingString:edt]];
@@ -477,6 +946,209 @@
             NSLog(@"Erreur écriture edt");
             [[NSNotificationCenter defaultCenter] postNotificationName:@"edtTelecharge" object:nil userInfo:[NSDictionary dictionaryWithObjects:[NSArray arrayWithObjects:[NSNumber numberWithBool:NO],edt, nil] forKeys:[NSArray arrayWithObjects:@"succes",@"nom", nil]]];
         }
+        donneesRecues = nil;
+        recupEdt = nil;
+    }
+    
+    else if (connection == recupVendome && donneesVendome) {
+        NSString *finURL = [[[[[connection currentRequest] URL] absoluteString] componentsSeparatedByString:@"/"] lastObject];
+        
+        if ([finURL isEqualToString:@""]) {
+            NSArray *liste = [NSJSONSerialization JSONObjectWithData:donneesVendome options:NSJSONReadingAllowFragments error:NULL];
+            if (liste) {
+                NSString *fichierVendome = [[NSSearchPathForDirectoriesInDomains(NSLibraryDirectory, NSUserDomainMask, YES) objectAtIndex:0] stringByAppendingString:@"/vendomes.plist"];
+                [liste writeToFile:fichierVendome atomically:NO];
+                
+                [[NSNotificationCenter defaultCenter] postNotificationName:@"vendomeTelecharge" object:nil userInfo:[NSDictionary dictionaryWithObjects:[NSArray arrayWithObjects:[NSNumber numberWithBool:YES],@"liste", nil] forKeys:[NSArray arrayWithObjects:@"succes",@"nom", nil]]];
+            }
+            else {
+                [[NSNotificationCenter defaultCenter] postNotificationName:@"vendomeTelecharge" object:nil userInfo:[NSDictionary dictionaryWithObjects:[NSArray arrayWithObjects:[NSNumber numberWithBool:NO],@"liste", nil] forKeys:[NSArray arrayWithObjects:@"succes",@"nom", nil]]];
+            }
+        }
+        
+        else {
+            NSString *fichierVendome = [[NSSearchPathForDirectoriesInDomains(NSLibraryDirectory, NSUserDomainMask, YES) objectAtIndex:0] stringByAppendingString:[@"/vendome/" stringByAppendingString:finURL]];
+            if ([donneesVendome writeToFile:fichierVendome atomically:NO]) {
+                [[NSNotificationCenter defaultCenter] postNotificationName:@"vendomeTelecharge" object:nil userInfo:[NSDictionary dictionaryWithObjects:[NSArray arrayWithObjects:[NSNumber numberWithBool:YES],finURL, nil] forKeys:[NSArray arrayWithObjects:@"succes",@"nom", nil]]];
+            }
+            else {
+                [[NSNotificationCenter defaultCenter] postNotificationName:@"vendomeTelecharge" object:nil userInfo:[NSDictionary dictionaryWithObjects:[NSArray arrayWithObjects:[NSNumber numberWithBool:NO],finURL, nil] forKeys:[NSArray arrayWithObjects:@"succes",@"nom", nil]]];
+            }
+            vendomeEnCours = @"";
+        }
+        donneesVendome = nil;
+        recupVendome = nil;
+    }
+    else if (connection == sondage && donneesRecues) {
+        NSArray *morceaux = [[[[connection currentRequest] URL] absoluteString] componentsSeparatedByString:@"/"];
+        if ([[morceaux objectAtIndex:[morceaux count]-2] isEqualToString:@"json"]) {
+            
+            NSMutableDictionary *result = [NSJSONSerialization JSONObjectWithData:donneesRecues options:NSJSONReadingAllowFragments error:NULL];
+            
+            if (result) {
+                NSDate *parution = [deformatter dateFromString:[result objectForKey:@"date_parution"]];
+                
+                NSString *date = [formatter stringFromDate:parution];
+                NSDate *dateDeformattee = [formatter dateFromString:date];
+                
+                NSString *fichierSondage = [[NSSearchPathForDirectoriesInDomains(NSCachesDirectory, NSUserDomainMask, YES) objectAtIndex:0] stringByAppendingString:[@"/sondages/" stringByAppendingString:date]];
+        
+                if ([result writeToFile:fichierSondage atomically:NO]) {
+                    [[NSNotificationCenter defaultCenter] postNotificationName:@"sondageTelecharge" object:nil userInfo:[NSDictionary dictionaryWithObjects:[NSArray arrayWithObjects:[NSNumber numberWithBool:YES],dateDeformattee, nil] forKeys:[NSArray     arrayWithObjects:@"succes",@"date", nil]]];
+                }
+                else {
+                    [[NSNotificationCenter defaultCenter] postNotificationName:@"sondageTelecharge" object:nil userInfo:[NSDictionary dictionaryWithObjects:[NSArray arrayWithObjects:[NSNumber numberWithBool:NO],dateDeformattee, nil] forKeys:[NSArray arrayWithObjects:@"succes",@"date", nil]]];
+                }
+            }
+            else {
+                int i = [[morceaux objectAtIndex:[morceaux count]-3] intValue];
+                [decalage setDay:-i];
+                NSDate *date = [[NSCalendar currentCalendar] dateByAddingComponents:decalage toDate:[NSDate date] options:0];
+                [[NSNotificationCenter defaultCenter] postNotificationName:@"sondageTelecharge" object:nil userInfo:[NSDictionary dictionaryWithObjects:[NSArray arrayWithObjects:[NSNumber numberWithBool:NO],date, nil] forKeys:[NSArray arrayWithObjects:@"succes",@"date", nil]]];
+            }
+        }
+        else {
+            if (donneesRecues) {
+                NSMutableDictionary *result = [NSJSONSerialization JSONObjectWithData:donneesRecues options:NSJSONReadingAllowFragments error:NULL];
+                if (result && [result objectForKey:@"nombre_reponse_1"]) {
+                    
+                    NSDate *parution = [deformatter dateFromString:[result objectForKey:@"date_parution"]];
+                    NSString *date = [formatter stringFromDate:parution];
+                    
+                    NSString *fichierSondage = [[NSSearchPathForDirectoriesInDomains(NSCachesDirectory, NSUserDomainMask, YES) objectAtIndex:0] stringByAppendingString:[@"/sondages/" stringByAppendingString:date]];
+                    
+                    if ([result writeToFile:fichierSondage atomically:NO]) {
+                        [[NSNotificationCenter defaultCenter] postNotificationName:@"voteSondage" object:nil userInfo:[NSDictionary dictionaryWithObjects:[NSArray arrayWithObjects:[NSNumber numberWithBool:YES], nil] forKeys:[NSArray arrayWithObjects:@"succes", nil]]];
+                    }
+                    else {
+                        [[NSNotificationCenter defaultCenter] postNotificationName:@"voteSondage" object:nil userInfo:[NSDictionary dictionaryWithObjects:[NSArray arrayWithObjects:[NSNumber numberWithBool:NO], nil] forKeys:[NSArray arrayWithObjects:@"succes", nil]]];
+                    }
+                }
+                else {
+                    [self identification];
+                    [[NSNotificationCenter defaultCenter] postNotificationName:@"voteSondage" object:nil userInfo:[NSDictionary dictionaryWithObjects:[NSArray arrayWithObjects:[NSNumber numberWithBool:NO], nil] forKeys:[NSArray arrayWithObjects:@"succes", nil]]];
+                }
+            }
+            else
+                [[NSNotificationCenter defaultCenter] postNotificationName:@"voteSondage" object:nil userInfo:[NSDictionary dictionaryWithObjects:[NSArray arrayWithObjects:[NSNumber numberWithBool:NO], nil] forKeys:[NSArray arrayWithObjects:@"succes", nil]]];
+        }
+        donneesRecues = nil;
+        sondage = nil;
+    }
+    
+    else if (connection == recupPC && donneesRecues) {
+        if ([[[[[[connection currentRequest] URL] absoluteString] componentsSeparatedByString:@"/"] lastObject] isEqualToString:@""]) {
+            petitsCours = [NSJSONSerialization JSONObjectWithData:donneesRecues options:NSJSONReadingAllowFragments error:NULL];
+            if (donneesRecues && petitsCours) {
+                [[NSNotificationCenter defaultCenter] postNotificationName:@"pcTelecharge" object:nil userInfo:[NSDictionary dictionaryWithObjects:[NSArray arrayWithObjects:[NSNumber numberWithBool:YES], nil] forKeys:[NSArray arrayWithObjects:@"succes", nil]]];
+            }
+            else {
+                [[NSNotificationCenter defaultCenter] postNotificationName:@"pcTelecharge" object:nil userInfo:[NSDictionary dictionaryWithObjects:[NSArray arrayWithObjects:[NSNumber numberWithBool:NO], nil] forKeys:[NSArray arrayWithObjects:@"succes", nil]]];
+            }
+        }
+        else
+            [[NSNotificationCenter defaultCenter] postNotificationName:@"demandePC" object:nil userInfo:[NSDictionary dictionaryWithObjects:[NSArray arrayWithObjects:[NSNumber numberWithBool:YES], nil] forKeys:[NSArray arrayWithObjects:@"succes", nil]]];
+        donneesRecues = nil;
+        recupPC = nil;
+    }
+    
+    else if (connection == recupCalendrier && donneesRecues) {
+        NSArray *calendrier;
+        calendrier = [NSJSONSerialization JSONObjectWithData:donneesRecues options:NSJSONReadingAllowFragments error:NULL];
+        if (donneesRecues && calendrier) {
+            NSString *fichierCalendrier = [[NSSearchPathForDirectoriesInDomains(NSCachesDirectory, NSUserDomainMask, YES) objectAtIndex:0] stringByAppendingString:@"/calendrier.plist"];
+            if ([calendrier writeToFile:fichierCalendrier atomically:NO]) {
+                [[NSNotificationCenter defaultCenter] postNotificationName:@"calendrierTelecharge" object:nil userInfo:[NSDictionary dictionaryWithObjects:[NSArray arrayWithObjects:[NSNumber numberWithBool:YES], nil] forKeys:[NSArray arrayWithObjects:@"succes", nil]]];
+            }
+            else {
+                [[NSNotificationCenter defaultCenter] postNotificationName:@"calendrierTelecharge" object:nil userInfo:[NSDictionary dictionaryWithObjects:[NSArray arrayWithObjects:[NSNumber numberWithBool:NO], nil] forKeys:[NSArray arrayWithObjects:@"succes", nil]]];
+            }
+        }
+        else {
+            [[NSNotificationCenter defaultCenter] postNotificationName:@"calendrierTelecharge" object:nil userInfo:[NSDictionary dictionaryWithObjects:[NSArray arrayWithObjects:[NSNumber numberWithBool:NO], nil] forKeys:[NSArray arrayWithObjects:@"succes", nil]]];
+        }
+        donneesRecues = nil;
+        recupCalendrier = nil;
+    }
+    
+    else if (connection == recupPhotoAsso && donneesRecues) {
+        NSString *nomAsso;
+        nomAsso = [[[[[connection currentRequest] URL] absoluteString] componentsSeparatedByString:@"_"] lastObject];
+        NSString *fichierPhoto = [[NSSearchPathForDirectoriesInDomains(NSLibraryDirectory, NSUserDomainMask, YES) objectAtIndex:0] stringByAppendingString:[@"/photos-assoces/" stringByAppendingString:nomAsso]];
+        [donneesRecues writeToFile:fichierPhoto atomically:NO];
+        UIImage *image = [UIImage imageWithData:donneesRecues];
+        if (image)
+            [photoAssos setObject:image forKey:nomAsso];
+        donneesRecues = nil;
+        recupPhotoAsso = nil;
+    }
+    
+    else if ((connection == recupChat || connection == postChat) && donneesRecues) {
+        NSDictionary *resultat = [NSJSONSerialization JSONObjectWithData:donneesRecues options:NSJSONReadingAllowFragments error:nil];
+        tempsChat = [[resultat objectForKey:@"time"] doubleValue];
+        if ([[resultat objectForKey:@"status"] boolValue]) {
+            self.messagesChat = resultat;
+            NSString *fichierChat = [[NSSearchPathForDirectoriesInDomains(NSCachesDirectory, NSUserDomainMask, YES) objectAtIndex:0] stringByAppendingString:@"/chat.plist"];
+            [resultat writeToFile:fichierChat atomically:NO];
+            
+            if (connection == recupChat) 
+                [[NSNotificationCenter defaultCenter] postNotificationName:@"MajChat" object:nil userInfo:[NSDictionary dictionaryWithObjects:[NSArray arrayWithObjects:[NSNumber numberWithBool:YES],[NSNumber numberWithBool:YES], nil] forKeys:[NSArray arrayWithObjects:@"succes",@"maj", nil]]];
+            else
+                [[NSNotificationCenter defaultCenter] postNotificationName:@"EnvoieValide" object:nil userInfo:[NSDictionary dictionaryWithObjects:[NSArray arrayWithObjects:[NSNumber numberWithBool:YES],[NSNumber numberWithBool:YES], nil] forKeys:[NSArray arrayWithObjects:@"succes",@"maj", nil]]];
+        }
+        else if (connection == recupChat)
+            [[NSNotificationCenter defaultCenter] postNotificationName:@"MajChat" object:nil userInfo:[NSDictionary dictionaryWithObjects:[NSArray arrayWithObjects:[NSNumber numberWithBool:YES],[NSNumber numberWithBool:NO],[NSNumber numberWithLong:tempsChat], nil] forKeys:[NSArray arrayWithObjects:@"succes",@"maj",@"temps", nil]]];
+        else
+            [[NSNotificationCenter defaultCenter] postNotificationName:@"EnvoieValide" object:nil userInfo:[NSDictionary dictionaryWithObjects:[NSArray arrayWithObjects:[NSNumber numberWithBool:YES],[NSNumber numberWithBool:NO],[NSNumber numberWithLong:tempsChat], nil] forKeys:[NSArray arrayWithObjects:@"succes",@"maj",@"temps", nil]]];
     }
 }
+
+- (void)didReceiveMemoryWarning
+{
+    [images removeAllObjects];
+    [messages removeAllObjects];
+    [edtTelecharge removeAllObjects];
+    // Dispose of any resources that can be recreated.
+}
+
+- (void)applicationWillResignActive {
+    enPause = YES;
+}
+
+- (void)applicationDidEnterBackground {
+    if (ident) [ident cancel];
+    if (testReseau) [testReseau cancel];
+    if (recupToken) [recupToken cancel];
+    if (recupTrombi) [recupTrombi cancel];
+    if (recupMessage) [recupMessage cancel];
+    if (recupEdt) [recupEdt cancel];
+    if (recupVendome) [recupVendome cancel];
+    if (sondage) [sondage cancel];
+    if (recupPC) [recupPC cancel];
+    if (recupCalendrier) [recupCalendrier cancel];
+    if (recupPhotoAsso) [recupPhotoAsso cancel];
+    if (classementMessageLu) [classementMessageLu cancel];
+    if (classementMessageFavori) [classementMessageFavori cancel];
+    if (recupChat) [recupChat cancel];
+    if (postChat) [postChat cancel];
+}
+
+- (void)applicationWillEnterForeground {
+    [self identification];
+}
+
+- (void)applicationDidBecomeActive {
+    //if (self) {
+        enPause = NO;
+        if ([telechargements count]) {
+            for (int i=0;i<40;i++) {
+                if ([telechargements count]) {
+                    [[telechargements objectAtIndex:0] startDownload];
+                    [telechargements removeObjectAtIndex:0];
+                }
+            }
+        }
+    //}
+}
+
 @end

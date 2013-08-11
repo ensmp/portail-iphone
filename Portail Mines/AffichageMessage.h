@@ -13,6 +13,7 @@
 {
     Reseau *reseau;
     NSDictionary *message;
+    BOOL horizontal;
 }
 
 @property (weak, nonatomic) IBOutlet UIImageView *Logo;
@@ -20,9 +21,10 @@
 @property (weak, nonatomic) IBOutlet UITextView *Contenu;
 @property (weak, nonatomic) IBOutlet UILabel *Expediteur;
 @property (weak, nonatomic) IBOutlet UIButton *Favori;
-- (IBAction)mettreEnFavori:(id)sender;
-- (IBAction)aiLu:(id)sender;
+@property (weak, nonatomic) IBOutlet UIScrollView *vue;
+
 - (id)initWithNibName:(NSString *)nibNameOrNil bundle:(NSBundle *)nibBundleOrNil andNetwork:(Reseau *)reseau;
 - (void)changeDico:(NSDictionary *)dico;
+-(IBAction)tapeFavori:(id)sender;
 
 @end

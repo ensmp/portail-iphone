@@ -11,7 +11,7 @@
 
 @implementation FluxTelechargement
 
--(id)initWithDomaine:(NSString *)domaine etUsername:(NSString *)username withParent:(Reseau *)parent etPhoto:(BOOL)photoOuDoc {
+-(id)initWithDomaine:(NSString *)domaine etUsername:(NSString *)username withParent:(id<FluxTelechargementDelegate>)parent etPhoto:(BOOL)photoOuDoc {
     self = [super init];
     if (self) {
         nomDomaine = domaine;
@@ -19,7 +19,7 @@
         type = photoOuDoc;
         personne = username;
         if (photoOuDoc) {
-            getRequete = [[NSMutableURLRequest alloc] initWithURL:[NSURL URLWithString:[nomDomaine stringByAppendingString:[NSString stringWithFormat:@"/static/%@.jpg",username]]] cachePolicy:NSURLRequestUseProtocolCachePolicy timeoutInterval:10];
+            getRequete = [[NSMutableURLRequest alloc] initWithURL:[NSURL URLWithString:[nomDomaine stringByAppendingString:[NSString stringWithFormat:@"/static/%@.jpg",username]]] cachePolicy:NSURLRequestUseProtocolCachePolicy timeoutInterval:20];
         }
         else {
             getRequete = [[NSMutableURLRequest alloc] initWithURL:[NSURL URLWithString:[nomDomaine stringByAppendingString:[NSString stringWithFormat:@"/people/%@/json",username]]] cachePolicy:NSURLRequestUseProtocolCachePolicy timeoutInterval:10];
@@ -64,7 +64,7 @@
     else {
         [reseau renvoieInfos:nil forUsername:personne];
     }
-
+    data = nil;
 }
 
 @end

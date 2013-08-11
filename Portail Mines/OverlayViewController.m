@@ -41,4 +41,10 @@
     // Dispose of any resources that can be recreated.
 }
 
+-(void)viewDidUnload {
+    rv = nil;
+    _rv = nil;
+    [super viewDidUnload];
+}
+
 @end

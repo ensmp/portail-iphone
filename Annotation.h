@@ -16,8 +16,8 @@
 }
 
 @property (nonatomic, readonly) CLLocationCoordinate2D coordinate;
-@property (nonatomic, retain) NSString *title;
-@property (nonatomic, retain) NSString *subtitle;
+@property (nonatomic, strong) NSString *title;
+@property (nonatomic, strong) NSString *subtitle;
 @property (nonatomic, assign) int tag;
 
 -(id)initWithLocation:(CLLocationCoordinate2D)newLocation titre:(NSString *)newTitre etLieu:(NSString *)newLieu;

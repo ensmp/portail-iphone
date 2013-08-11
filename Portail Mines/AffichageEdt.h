@@ -21,4 +21,9 @@
 -(id)initWithNibName:(NSString *)nibNameOrNil bundle:(NSBundle *)nibBundleOrNil andNetwork:(Reseau *)reseau;
 -(void)choixEdt:(NSString *)nomEdt;
 
+-(void)applicationWillResignActive;
+-(void)applicationDidEnterBackground;
+-(void)applicationWillEnterForeground;
+-(void)applicationDidBecomeActive;
+
 @end

@@ -8,6 +8,18 @@
 
 #import <UIKit/UIKit.h>
 
-@interface AffichageReglage : UIViewController
+@protocol FlipSideDelegate <NSObject>
 
+-(void)retournementTermine;
+
+@end
+
+@interface AffichageReglage : UIViewController <UIPickerViewDataSource, UIPickerViewDelegate>
+@property (weak, nonatomic) id<FlipSideDelegate> delegue;
+@property (weak, nonatomic) IBOutlet UISlider *slider;
+@property (weak, nonatomic) IBOutlet UILabel *affichageTemps;
+
+-(IBAction)changementValeurSlider:(UISlider *)sender;
+- (IBAction)tapeDone:(UIBarButtonItem *)sender;
+-(IBAction)changementSonnerie:(UIButton *)sender;
 @end

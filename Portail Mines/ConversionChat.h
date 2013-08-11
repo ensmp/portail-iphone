@@ -10,4 +10,6 @@
 
 @interface ConversionChat : NSObject
 
+-(NSAttributedString *)conversionMessage:(NSString *)messageHTML;
+
 @end

@@ -9,22 +9,35 @@
 #import <UIKit/UIKit.h>
 @class IdentificationViewController;
 @class Reseau;
+@class AffichageMessage;
 
-@interface FirstViewController : UIViewController <UITableViewDelegate,UITableViewDataSource> {
+@interface FirstViewController : UIViewController <UITableViewDelegate,UITableViewDataSource,UIAlertViewDelegate> {
     @private
-        BOOL premiere;
-        IdentificationViewController *control;
+        BOOL choixNouveau;
+        BOOL chargementEnCours;
         Reseau *reseauTest;
-        NSTimer *timer;
         NSArray *messages;
+        NSArray *tousMessages;
+        NSArray *utilise;
+        UISegmentedControl *choix;
+        UIRefreshControl *refresh;
+        AffichageMessage *vueDetail;
+    
+        NSArray *nouveauTableauFini;
+        NSArray *nouveauTableauFiniTous;
+    
+        NSDateFormatter *deformatter;
+        NSDateFormatter *formatterJour;
 }
 
-@property (nonatomic, strong) IBOutlet UINavigationBar *barre;
 @property (nonatomic, strong) IBOutlet UITableView *liste;
+@property (strong, nonatomic) IBOutlet UIActivityIndicatorView *activite;
 
 -(id)initWithNibName:(NSString *)nibNameOrNil bundle:(NSBundle *)nibBundleOrNil andNetwork:(Reseau *)reseau;
--(void)supprimerVue;
--(void)identification:(NSString *)username andPassword:(NSString *)password;
--(IBAction)deconnexion:(id)sender;
+
+-(void)applicationWillResignActive;
+-(void)applicationDidEnterBackground;
+-(void)applicationWillEnterForeground;
+-(void)applicationDidBecomeActive;
 
 @end
