@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<model name="" userDefinedModelVersionIdentifier="" type="com.apple.IDECoreDataModeler.DataModel" documentVersion="1.0" lastSavedToolsVersion="2057" systemVersion="12C60" minimumToolsVersion="Xcode 4.3" macOSVersion="Automatic" iOSVersion="Automatic">
+    <entity name="Personne" representedClassName="Personne" syncable="YES">
+        <attribute name="birthday" optional="YES" attributeType="String" syncable="YES"/>
+        <attribute name="chambre" optional="YES" attributeType="String" syncable="YES"/>
+        <attribute name="first_name" optional="YES" attributeType="String" syncable="YES"/>
+        <attribute name="last_name" optional="YES" attributeType="String" syncable="YES"/>
+        <attribute name="mail" optional="YES" attributeType="String" syncable="YES"/>
+        <attribute name="phone" optional="YES" attributeType="String" syncable="YES"/>
+        <attribute name="promo" optional="YES" attributeType="Integer 32" defaultValueString="0" syncable="YES"/>
+        <attribute name="username" optional="YES" attributeType="String" syncable="YES"/>
+        <relationship name="co" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="Personne" inverseName="co" inverseEntity="Personne" syncable="YES"/>
+        <relationship name="fillots" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="Personne" inverseName="parrains" inverseEntity="Personne" syncable="YES"/>
+        <relationship name="parrains" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="Personne" inverseName="fillots" inverseEntity="Personne" syncable="YES"/>
+        <relationship name="trombi" optional="YES" minCount="1" maxCount="1" deletionRule="Nullify" destinationEntity="Trombi" inverseName="membres" inverseEntity="Trombi" syncable="YES"/>
+    </entity>
+    <entity name="Sondage" syncable="YES">
+        <attribute name="date_parution" optional="YES" attributeType="Date" syncable="YES"/>
+        <attribute name="is_dernier" optional="YES" attributeType="Boolean" syncable="YES"/>
+        <attribute name="is_premier" optional="YES" attributeType="Boolean" syncable="YES"/>
+        <attribute name="nombre_reponse" optional="YES" attributeType="Integer 32" defaultValueString="0" syncable="YES"/>
+        <attribute name="nombre_reponse_1" optional="YES" attributeType="Integer 32" defaultValueString="0" syncable="YES"/>
+        <attribute name="nombre_reponse_2" optional="YES" attributeType="Integer 32" defaultValueString="0" syncable="YES"/>
+        <attribute name="question" optional="YES" attributeType="String" syncable="YES"/>
+        <attribute name="reponse1" optional="YES" attributeType="String" syncable="YES"/>
+        <attribute name="reponse2" optional="YES" attributeType="String" syncable="YES"/>
+    </entity>
+    <entity name="Trombi" syncable="YES">
+        <relationship name="membres" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="Personne" inverseName="trombi" inverseEntity="Personne" syncable="YES"/>
+    </entity>
+    <fetchRequest name="Anniversaire_jour" entity="Personne" predicateString="birthday == &quot;Date&quot;" includePropertyValues="YES" resultType="2"/>
+    <fetchRequest name="Promo" entity="Personne" predicateString="promo == 0" includePropertyValues="YES" resultType="2"/>
+    <elements>
+        <element name="Personne" positionX="160" positionY="192" width="128" height="225"/>
+        <element name="Trombi" positionX="-72" positionY="300" width="128" height="60"/>
+        <element name="Sondage" positionX="-243" positionY="9" width="128" height="178"/>
+    </elements>
+</model>
