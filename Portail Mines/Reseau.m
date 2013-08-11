@@ -50,13 +50,13 @@
 }
 
 -(void)getToken {
-    NSMutableURLRequest *getRequete = [[NSMutableURLRequest alloc] initWithURL:[NSURL URLWithString:_nomDomaine] cachePolicy:NSURLRequestReloadIgnoringCacheData timeoutInterval:4];
+    NSMutableURLRequest *getRequete = [[NSMutableURLRequest alloc] initWithURL:[NSURL URLWithString:[_nomDomaine stringByAppendingString:@"/accounts/login/"]] cachePolicy:NSURLRequestReloadIgnoringCacheData timeoutInterval:4];
     [getRequete setHTTPMethod:@"GET"];
     recupToken = [[NSURLConnection alloc] initWithRequest:getRequete delegate:self];
 }
 
 -(BOOL)identification:(NSString *)username andPassword:(NSString *)password {
-    NSArray *existants = [[NSHTTPCookieStorage sharedHTTPCookieStorage] cookiesForURL:[NSURL URLWithString:_nomDomaine]];
+    NSArray *existants = [[NSHTTPCookieStorage sharedHTTPCookieStorage] cookiesForURL:[NSURL URLWithString:[_nomDomaine stringByAppendingString:@"/accounts/login/"]]];
     if ([existants count] == 0) {
         return NO;
     }
